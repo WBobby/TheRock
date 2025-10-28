@@ -122,6 +122,16 @@ if(THEROCK_ENABLE_ROCPROFV3)
   )
   therock_cmake_subproject_activate(roctracer)
 
+  ##############################################################################
+  # RDC (ROCm Data Center Tool)
+  # Data center management and monitoring tool that provides profiling and
+  # telemetry capabilities through rocprofiler-sdk.
+  ##############################################################################
+
+  # Note: RDC integration has been moved to dctools/CMakeLists.txt
+  # See RFC0007 for the rationale behind this directory restructuring.
+  # RDC is now organized under dctools/ as a datacenter management tool.
+
   therock_provide_artifact(rocprofiler-sdk
     TARGET_NEUTRAL
     DESCRIPTOR artifact-rocprofiler-sdk.toml

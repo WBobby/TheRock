@@ -1,0 +1,36 @@
+# RDC (ROCm Data Center Tool)
+# Data center management and monitoring tool
+#
+# This artifact uses the portable-rdc/ directory structure as specified in RFC0007.
+# The portable distribution includes statically-linked gRPC for maximum portability.
+
+[components.dbg."dctools/rdc/stage"]
+include = [
+  "include/**",
+]
+
+[components.dev."dctools/rdc/stage"]
+include = [
+  "include/**",
+  "lib/cmake/**",
+  # Note: gRPC is statically linked into RDC binaries, no separate gRPC installation
+]
+
+[components.doc."dctools/rdc/stage"]
+include = [
+  "share/doc/rdc/**",
+]
+
+[components.lib."dctools/rdc/stage"]
+include = [
+  "lib/*.so*",
+  "lib/rdc/*.so*",  # Optional plugin modules (librdc_rocr.so, librdc_rocp.so, etc.)
+]
+
+[components.run."dctools/rdc/stage"]
+include = [
+  "bin/**",           # rdcd, rdci executables
+  "libexec/rdc/**",   # Helper scripts
+  "share/rdc/**",     # Runtime data files
+  "etc/**",           # Configuration files (rdc_options.conf)
+]

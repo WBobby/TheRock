@@ -26,6 +26,8 @@ project wide:
   bundling is not enabled or supported for the target OS):
   - `THEROCK_BUNDLED_BZIP2`
   - `THEROCK_BUNDLED_ELFUTILS`
+  - `THEROCK_BUNDLED_GRPC`
+  - `THEROCK_BUNDLED_LIBCAP`
   - `THEROCK_BUNDLED_LIBDRM`
   - `THEROCK_BUNDLED_LIBLZMA`
   - `THEROCK_BUNDLED_NUMACTL`
@@ -67,6 +69,65 @@ Supported sub-libraries: `libelf`, `libdw`.
 - Canonical method: `find_package(libdw)`
 - Import library: `libdw::libdw`
 - Alternatives: `pkg_check_modules(DW libdw)`
+
+## gRPC
+
+gRPC is a high-performance RPC framework used exclusively by RDC (ROCm Data 
+Center Tool) for its standalone mode components (rdcd daemon and rdci CLI).
+
+**Note:** gRPC is built as **static libraries** and linked into RDC binaries.
+It is integrated as a third-party dependency, not a traditional sysdep, but
+follows similar bundling patterns.
+
+**Organization:** RDC is organized under `dctools/` (datacenter tools) directory,
+separate from profiling tools. See RFC0007 for rationale.
+
+- **Integration:** Third-party static libraries under `third-party/grpc/`
+- **Version:** v1.67.1 (as specified in RFC0007)
+  - **Rationale:** This is the tested and validated version for RDC integration
+  - **Symbol Visibility:** Statically linked with comprehensive visibility controls to prevent symbol pollution
+- **Build Configuration:** Static-only build with symbol visibility controls
+  - `-DBUILD_SHARED_LIBS=OFF`
+  - `-DgRPC_BUILD_SHARED_LIBS=OFF`
+  - `-DgRPC_PREFER_STATIC_LIBS=ON`
+  - `-Dprotobuf_BUILD_SHARED_LIBS=OFF`
+  - `-DCMAKE_CXX_VISIBILITY_PRESET=hidden`
+  - `-DCMAKE_C_VISIBILITY_PRESET=hidden`
+  - `-DCMAKE_VISIBILITY_INLINES_HIDDEN=ON`
+  - `-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--exclude-libs,ALL`
+  - `-DCMAKE_EXE_LINKER_FLAGS=-Wl,--exclude-libs,ALL`
+  - `-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--exclude-libs,ALL`
+- **SSL Provider:** BoringSSL (built from gRPC submodule, statically linked)
+- **Linking:** Static linking into RDC binaries (rdcd, rdci, librdc_client.so)
+- **Canonical method:** `find_package(gRPC CONFIG REQUIRED)`
+- **Import libraries:** 
+  - `gRPC::grpc++` - C++ gRPC library
+  - `gRPC::grpc` - Core gRPC C library
+  - `protobuf::libprotobuf` - Protocol buffers runtime
+  - `gRPC::grpc_cpp_plugin` - Code generator tool
+  - `protobuf::protoc` - Protocol buffers compiler
+- **Bundled variable:** `THEROCK_BUNDLED_GRPC` (Linux only)
+- **Alternatives:** None (required for RDC standalone mode only)
+
+**Important:** gRPC symbols are hidden via visibility controls to prevent ODR
+violations. Do not use gRPC in other TheRock projects without coordination, as
+it may conflict with the statically-linked instance in RDC.
+
+**Dependencies:** gRPC bundles and statically links the following:
+- Abseil (abseil-cpp) - C++ common libraries
+- Protocol Buffers (protobuf) - Serialization
+- RE2 - Regular expression library
+- c-ares - Asynchronous DNS resolver
+- BoringSSL - SSL/TLS library (Google's OpenSSL fork)
+
+## libcap
+
+Linux capabilities library, used by RDC for privilege management.
+
+- **Canonical method:** `find_library(LIB_CAP NAMES cap REQUIRED)`
+- **Import library:** Not provided (use ${LIB_CAP} variable)
+- **Bundled variable:** `THEROCK_BUNDLED_LIBCAP` (Linux only)
+- **Alternatives:** System installation via libcap-dev/libcap-devel packages
 
 ## libdrm
 

@@ -18,24 +18,49 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     NO_MERGE_COMPILE_COMMANDS
     BACKGROUND_BUILD
     OUTPUT_ON_FAILURE
-  CMAKE_ARGS
-    "-DSOURCE_DIR=${_source_dir}"
-    "-DTHEROCK_SOURCE_DIR=${THEROCK_SOURCE_DIR}"
+    
+    CMAKE_ARGS
+      "-DSOURCE_DIR=${_source_dir}"
+      "-DTHEROCK_SOURCE_DIR=${THEROCK_SOURCE_DIR}"
+      
+      # Symbol visibility control (RFC0007 core requirement)
+      "-DCMAKE_CXX_VISIBILITY_PRESET=hidden"
+      "-DCMAKE_C_VISIBILITY_PRESET=hidden"
+      "-DCMAKE_VISIBILITY_INLINES_HIDDEN=ON"
+      
+      # Force static library builds
+      "-DBUILD_SHARED_LIBS=OFF"
+      "-DgRPC_BUILD_SHARED_LIBS=OFF"
+      "-DgRPC_PREFER_STATIC_LIBS=ON"
+      "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
+      
+      # Linker flags to prevent symbol duplication
+      "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
+      "-DCMAKE_EXE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
+      "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
+    
     RUNTIME_DEPS
       therock-zlib
+    
     INSTALL_DESTINATION
       lib/rocm_sysdeps
+    
     INTERFACE_INCLUDE_DIRS
       lib/rocm_sysdeps/include
+    
     INTERFACE_LINK_DIRS
       lib/rocm_sysdeps/lib
+    
     INTERFACE_INSTALL_RPATH_DIRS
       lib/rocm_sysdeps/lib
+    
     INTERFACE_PKG_CONFIG_DIRS
       lib/rocm_sysdeps/lib/pkgconfig
+    
     EXTRA_DEPENDS
       "${_download_stamp}"
   )
+  
   therock_cmake_subproject_provide_package(therock-grpc gRPC lib/rocm_sysdeps/lib/cmake/grpc)
   therock_cmake_subproject_provide_package(therock-grpc protobuf lib/rocm_sysdeps/lib/cmake/protobuf)
   therock_cmake_subproject_activate(therock-grpc)
@@ -123,31 +148,17 @@ add_custom_target(
       "-DCMAKE_CXX_STANDARD=17"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
-      # Force static library builds (disable shared libraries)
-      "-DBUILD_SHARED_LIBS=OFF"
-      "-DgRPC_BUILD_SHARED_LIBS=OFF"
-      "-DgRPC_PREFER_STATIC_LIBS=ON"
-      "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
-      # Symbol visibility control to prevent pollution when statically linked
-      "-DCMAKE_CXX_VISIBILITY_PRESET=hidden"
-      "-DCMAKE_C_VISIBILITY_PRESET=hidden"
-      "-DCMAKE_VISIBILITY_INLINES_HIDDEN=ON"
-      # Linker flags to hide static library symbols in final shared libraries
-      "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
-      "-DCMAKE_EXE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
-      "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
-      # Use already-built zlib instead of rebuilding
+      # Note: Symbol visibility and static linking flags are inherited from CMAKE_ARGS
+      # via TheRock's project_init.cmake, so we don't need to repeat them here
       "-DgRPC_ZLIB_PROVIDER=package"
       "-DZLIB_ROOT=${ZLIB_ROOT}"
       "-DZLIB_INCLUDE_DIR=${ZLIB_INCLUDE_DIR}"
       "-DZLIB_LIBRARY=${ZLIB_LIBRARY}"
-      # Build from submodules
       "-DgRPC_ABSL_PROVIDER=module"
       "-DgRPC_CARES_PROVIDER=module"
       "-DgRPC_RE2_PROVIDER=module"
       "-DgRPC_SSL_PROVIDER=module"
       "-DgRPC_PROTOBUF_PROVIDER=module"
-      # Build options
       "-DgRPC_BUILD_TESTS=OFF"
       "-DgRPC_BUILD_CSHARP_EXT=OFF"
       "-DgRPC_BUILD_GRPC_CSHARP_PLUGIN=OFF"

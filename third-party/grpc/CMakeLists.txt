@@ -7,7 +7,7 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     CMAKE_PROJECT
     SOURCE_DIR "${_source_dir}"
     GIT_REPOSITORY "https://github.com/grpc/grpc.git"
-    GIT_TAG "v1.76.0"
+    GIT_TAG "v1.67.1"
     GIT_SHALLOW ON
     GIT_SUBMODULES_RECURSE ON
     TOUCH "${_download_stamp}"

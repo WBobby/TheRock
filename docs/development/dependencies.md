@@ -83,13 +83,20 @@ follows similar bundling patterns.
 separate from profiling tools. See RFC0007 for rationale.
 
 - **Integration:** Third-party static libraries under `third-party/grpc/`
-- **Version:** v1.76.0 (RFC0007 specifies v1.67.1+, upgraded for compatibility)
+- **Version:** v1.67.1 (as specified in RFC0007)
+  - **Rationale:** This is the tested and validated version for RDC integration
+  - **Symbol Visibility:** Statically linked with comprehensive visibility controls to prevent symbol pollution
 - **Build Configuration:** Static-only build with symbol visibility controls
   - `-DBUILD_SHARED_LIBS=OFF`
   - `-DgRPC_BUILD_SHARED_LIBS=OFF`
   - `-DgRPC_PREFER_STATIC_LIBS=ON`
+  - `-Dprotobuf_BUILD_SHARED_LIBS=OFF`
   - `-DCMAKE_CXX_VISIBILITY_PRESET=hidden`
+  - `-DCMAKE_C_VISIBILITY_PRESET=hidden`
+  - `-DCMAKE_VISIBILITY_INLINES_HIDDEN=ON`
   - `-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--exclude-libs,ALL`
+  - `-DCMAKE_EXE_LINKER_FLAGS=-Wl,--exclude-libs,ALL`
+  - `-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--exclude-libs,ALL`
 - **SSL Provider:** BoringSSL (built from gRPC submodule, statically linked)
 - **Linking:** Static linking into RDC binaries (rdcd, rdci, librdc_client.so)
 - **Canonical method:** `find_package(gRPC CONFIG REQUIRED)`

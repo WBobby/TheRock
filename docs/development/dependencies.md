@@ -79,8 +79,17 @@ Center Tool) for its standalone mode components (rdcd daemon and rdci CLI).
 It is integrated as a third-party dependency, not a traditional sysdep, but
 follows similar bundling patterns.
 
+**Organization:** RDC is organized under `dctools/` (datacenter tools) directory,
+separate from profiling tools. See RFC0007 for rationale.
+
 - **Integration:** Third-party static libraries under `third-party/grpc/`
 - **Version:** v1.76.0 (RFC0007 specifies v1.67.1+, upgraded for compatibility)
+- **Build Configuration:** Static-only build with symbol visibility controls
+  - `-DBUILD_SHARED_LIBS=OFF`
+  - `-DgRPC_BUILD_SHARED_LIBS=OFF`
+  - `-DgRPC_PREFER_STATIC_LIBS=ON`
+  - `-DCMAKE_CXX_VISIBILITY_PRESET=hidden`
+  - `-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--exclude-libs,ALL`
 - **SSL Provider:** BoringSSL (built from gRPC submodule, statically linked)
 - **Linking:** Static linking into RDC binaries (rdcd, rdci, librdc_client.so)
 - **Canonical method:** `find_package(gRPC CONFIG REQUIRED)`

@@ -1,6 +1,5 @@
 if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  # gRPC (static library) - used by RDC for RPC communication
-  # When included in TheRock, we download sources and set up the sub-project.
+  # gRPC static library for RDC
   set(_source_dir "${CMAKE_CURRENT_BINARY_DIR}/source")
   set(_download_stamp "${_source_dir}/download.stamp")
 
@@ -41,7 +40,7 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   therock_cmake_subproject_provide_package(therock-grpc protobuf lib/rocm_sysdeps/lib/cmake/protobuf)
   therock_cmake_subproject_activate(therock-grpc)
 
-  # Validate that key static libraries are built correctly
+  # Static library validation tests
   foreach(lib_name libgrpc++.a libgrpc.a libprotobuf.a)
     add_test(
       NAME therock-validate-static-lib-${lib_name}
@@ -51,40 +50,42 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     )
   endforeach()
 
-  # Note: We do NOT test for zero global symbols (T) in gRPC static libraries here.
-  # Rationale:
-  #   1. Static libraries must export public API symbols (T) for the linker to find them
-  #   2. gRPC has ~451 global symbols which are its public API (e.g., grpc::Channel::CreateCall)
-  #   3. Symbol hiding (-fvisibility=hidden) still works: ~459 internal symbols are hidden (t)
-  #   4. The REAL validation is in profiler/CMakeLists.txt:
-  #      - rdc-validate-no-grpc-symbol-pollution ensures librdc_client.so doesn't export gRPC symbols
-  #   5. This end-to-end test is what matters for RFC0007's goal: prevent symbol pollution
-  #
-  # Symbol visibility flags are applied (see CMAKE_CXX_VISIBILITY_PRESET=hidden below),
-  # and the final shared libraries correctly hide gRPC symbols in their dynamic symbol table.
+  # Comprehensive linking test (all libraries together)
+  add_test(
+    NAME therock-validate-grpc-static-libs-linkage
+    COMMAND
+      "${CMAKE_CURRENT_SOURCE_DIR}/validate_static_library.sh"
+        "${CMAKE_CURRENT_BINARY_DIR}/build/dist/lib/rocm_sysdeps/lib/libgrpc++.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/build/dist/lib/rocm_sysdeps/lib/libgrpc.a"
+        "${CMAKE_CURRENT_BINARY_DIR}/build/dist/lib/rocm_sysdeps/lib/libprotobuf.a"
+  )
+  set_tests_properties(therock-validate-grpc-static-libs-linkage PROPERTIES
+    LABELS "grpc;static-library;linkage"
+  )
+
+  # Note: Static libraries must export public API symbols (T) for linking (~451 global symbols).
+  # Symbol visibility flags (-fvisibility=hidden) hide internal symbols (~459 as 't').
+  # Final validation: dctools/CMakeLists.txt ensures librdc_client.so doesn't export gRPC symbols.
 
   return()
 endif()
 
-# Otherwise, this is the sub-project build.
+# Sub-project build
 cmake_minimum_required(VERSION 3.25)
 project(GRPC_BUILD)
 
 include(ProcessorCount)
 ProcessorCount(PAR_JOBS)
 
-# Use find_package to locate zlib (provided by therock-zlib via RUNTIME_DEPS)
-# CMAKE_PREFIX_PATH is automatically set by TheRock to include zlib's stage directory
+# Locate zlib (provided via RUNTIME_DEPS)
 find_package(ZLIB REQUIRED CONFIG)
 
 if(NOT TARGET ZLIB::ZLIB)
   message(FATAL_ERROR "ZLIB::ZLIB target not found. Please ensure therock-zlib is built first.")
 endif()
 
-# Extract zlib information from the imported target
 get_target_property(ZLIB_INCLUDE_DIR ZLIB::ZLIB INTERFACE_INCLUDE_DIRECTORIES)
 get_target_property(ZLIB_LIBRARY ZLIB::ZLIB IMPORTED_LOCATION)
-# Get ZLIB_ROOT by going up from lib directory
 get_filename_component(ZLIB_LIB_DIR "${ZLIB_LIBRARY}" DIRECTORY)
 get_filename_component(ZLIB_ROOT "${ZLIB_LIB_DIR}/.." ABSOLUTE)
 
@@ -93,15 +94,9 @@ message(STATUS "  ZLIB_ROOT: ${ZLIB_ROOT}")
 message(STATUS "  ZLIB_INCLUDE_DIR: ${ZLIB_INCLUDE_DIR}")
 message(STATUS "  ZLIB_LIBRARY: ${ZLIB_LIBRARY}")
 
-# Set variable for reused path to improve code maintainability
 set(_grpc_build_dir "${CMAKE_CURRENT_BINARY_DIR}/b")
 
-# Safety check: Prevent accidental deletion of system directories with 'rm -rf'
-# Two-layer protection:
-#   1. Blacklist: Reject critical system paths (/, /usr, /usr/local)
-#   2. Whitelist: Require path contains "build" (typical build directory pattern)
-# This allows flexibility for developers (e.g., /home/user/project/build) while
-# preventing accidental deletion of system directories or non-build paths.
+# Safety check: Prevent accidental 'rm -rf' of system directories
 if(CMAKE_INSTALL_PREFIX STREQUAL "/" OR 
    CMAKE_INSTALL_PREFIX STREQUAL "/usr" OR
    CMAKE_INSTALL_PREFIX STREQUAL "/usr/local" OR
@@ -128,10 +123,19 @@ add_custom_target(
       "-DCMAKE_CXX_STANDARD=17"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
+      # Force static library builds (disable shared libraries)
+      "-DBUILD_SHARED_LIBS=OFF"
+      "-DgRPC_BUILD_SHARED_LIBS=OFF"
+      "-DgRPC_PREFER_STATIC_LIBS=ON"
+      "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
       # Symbol visibility control to prevent pollution when statically linked
       "-DCMAKE_CXX_VISIBILITY_PRESET=hidden"
       "-DCMAKE_C_VISIBILITY_PRESET=hidden"
       "-DCMAKE_VISIBILITY_INLINES_HIDDEN=ON"
+      # Linker flags to hide static library symbols in final shared libraries
+      "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
+      "-DCMAKE_EXE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
+      "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
       # Use already-built zlib instead of rebuilding
       "-DgRPC_ZLIB_PROVIDER=package"
       "-DZLIB_ROOT=${ZLIB_ROOT}"
@@ -154,14 +158,9 @@ add_custom_target(
       "-DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF"
       "-DgRPC_INSTALL=ON"
       "-DCMAKE_INSTALL_LIBDIR=lib"
-      # Set RPATH for installed libraries and executables
-      # $ORIGIN for libs, $ORIGIN/../lib for bins (protoc, grpc_cpp_plugin)
-      # Also add path to zlib for executables that need it at runtime
-      # From bin/ (third-party/grpc/.../bin) to sysdeps/linux/zlib/.../lib
+      # RPATH: $ORIGIN for libs, $ORIGIN/../lib for bins, path to zlib
       "-DCMAKE_INSTALL_RPATH=\$ORIGIN:\$ORIGIN/../lib:\$ORIGIN/../../../../../../sysdeps/linux/zlib/build/stage/lib/rocm_sysdeps/lib"
       "-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON"
-      # Add build-time RPATH to find zlib during gRPC build/test phase
-      # This is separate from install RPATH and only used during build
       "-DCMAKE_BUILD_RPATH=${ZLIB_ROOT}/lib"
       "-DCMAKE_SKIP_BUILD_RPATH=OFF"
   COMMAND

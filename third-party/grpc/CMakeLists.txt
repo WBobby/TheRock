@@ -4,6 +4,7 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   set(_download_stamp "${_source_dir}/download.stamp")
 
   therock_subproject_fetch(therock-grpc-sources
+    CMAKE_PROJECT
     SOURCE_DIR "${_source_dir}"
     GIT_REPOSITORY "https://github.com/grpc/grpc.git"
     GIT_TAG "v1.76.0"
@@ -12,29 +13,71 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     TOUCH "${_download_stamp}"
   )
 
+  set(_binary_dir "${CMAKE_CURRENT_BINARY_DIR}/build")
+
   therock_cmake_subproject_declare(therock-grpc
-    EXTERNAL_SOURCE_DIR .
-    BINARY_DIR build
+    EXTERNAL_SOURCE_DIR "${_source_dir}"
+    BINARY_DIR "${_binary_dir}"
     NO_MERGE_COMPILE_COMMANDS
     BACKGROUND_BUILD
     OUTPUT_ON_FAILURE
-  CMAKE_ARGS
-    "-DSOURCE_DIR=${_source_dir}"
-    "-DTHEROCK_SOURCE_DIR=${THEROCK_SOURCE_DIR}"
+
+    CMAKE_ARGS
+      -DCMAKE_CXX_STANDARD=17
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      -DBUILD_SHARED_LIBS=OFF
+      -DgRPC_BUILD_SHARED_LIBS=OFF
+      -DgRPC_PREFER_STATIC_LIBS=ON
+      -Dprotobuf_BUILD_SHARED_LIBS=OFF
+      -DCMAKE_CXX_VISIBILITY_PRESET=hidden
+      -DCMAKE_C_VISIBILITY_PRESET=hidden
+      -DCMAKE_VISIBILITY_INLINES_HIDDEN=ON
+      "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
+      "-DCMAKE_EXE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
+      "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
+      "-DgRPC_ZLIB_PROVIDER=package"
+      "-DgRPC_ABSL_PROVIDER=module"
+      "-DgRPC_CARES_PROVIDER=module"
+      "-DgRPC_RE2_PROVIDER=module"
+      "-DgRPC_SSL_PROVIDER=module"
+      "-DgRPC_PROTOBUF_PROVIDER=module"
+      "-DgRPC_BUILD_TESTS=OFF"
+      "-DgRPC_BUILD_CSHARP_EXT=OFF"
+      "-DgRPC_BUILD_GRPC_CSHARP_PLUGIN=OFF"
+      "-DgRPC_BUILD_GRPC_NODE_PLUGIN=OFF"
+      "-DgRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF"
+      "-DgRPC_BUILD_GRPC_PHP_PLUGIN=OFF"
+      "-DgRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF"
+      "-DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF"
+      "-DgRPC_INSTALL=ON"
+      "-DCMAKE_INSTALL_LIBDIR=lib"
+      "-DCMAKE_INSTALL_RPATH=\\$ORIGIN:\\$ORIGIN/../lib:\\$ORIGIN/../../../../../../sysdeps/linux/zlib/build/stage/lib/rocm_sysdeps/lib"
+      "-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON"
+      "-DCMAKE_SKIP_BUILD_RPATH=OFF"
+
     RUNTIME_DEPS
       therock-zlib
+
     INSTALL_DESTINATION
       lib/rocm_sysdeps
+
     INTERFACE_INCLUDE_DIRS
       lib/rocm_sysdeps/include
+
     INTERFACE_LINK_DIRS
       lib/rocm_sysdeps/lib
+
     INTERFACE_INSTALL_RPATH_DIRS
       lib/rocm_sysdeps/lib
+
     INTERFACE_PKG_CONFIG_DIRS
       lib/rocm_sysdeps/lib/pkgconfig
+
     EXTRA_DEPENDS
       "${_download_stamp}"
+
+    CMAKE_INCLUDES
+      "${CMAKE_CURRENT_SOURCE_DIR}/post_hook_therock-grpc.cmake"
   )
   therock_cmake_subproject_provide_package(therock-grpc gRPC lib/rocm_sysdeps/lib/cmake/grpc)
   therock_cmake_subproject_provide_package(therock-grpc protobuf lib/rocm_sysdeps/lib/cmake/protobuf)
@@ -70,106 +113,8 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   return()
 endif()
 
-# Sub-project build
 cmake_minimum_required(VERSION 3.25)
-project(GRPC_BUILD)
-
-include(ProcessorCount)
-ProcessorCount(PAR_JOBS)
-
-# Locate zlib (provided via RUNTIME_DEPS)
-find_package(ZLIB REQUIRED CONFIG)
-
-if(NOT TARGET ZLIB::ZLIB)
-  message(FATAL_ERROR "ZLIB::ZLIB target not found. Please ensure therock-zlib is built first.")
-endif()
-
-get_target_property(ZLIB_INCLUDE_DIR ZLIB::ZLIB INTERFACE_INCLUDE_DIRECTORIES)
-get_target_property(ZLIB_LIBRARY ZLIB::ZLIB IMPORTED_LOCATION)
-get_filename_component(ZLIB_LIB_DIR "${ZLIB_LIBRARY}" DIRECTORY)
-get_filename_component(ZLIB_ROOT "${ZLIB_LIB_DIR}/.." ABSOLUTE)
-
-message(STATUS "Found ZLIB via find_package()")
-message(STATUS "  ZLIB_ROOT: ${ZLIB_ROOT}")
-message(STATUS "  ZLIB_INCLUDE_DIR: ${ZLIB_INCLUDE_DIR}")
-message(STATUS "  ZLIB_LIBRARY: ${ZLIB_LIBRARY}")
-
-set(_grpc_build_dir "${CMAKE_CURRENT_BINARY_DIR}/b")
-
-# Safety check: Prevent accidental 'rm -rf' of system directories
-if(CMAKE_INSTALL_PREFIX STREQUAL "/" OR 
-   CMAKE_INSTALL_PREFIX STREQUAL "/usr" OR
-   CMAKE_INSTALL_PREFIX STREQUAL "/usr/local" OR
-   NOT CMAKE_INSTALL_PREFIX MATCHES "/build")
-  message(FATAL_ERROR 
-    "grpc: CMAKE_INSTALL_PREFIX appears to be outside a build directory.\n"
-    "  CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}\n"
-    "This is dangerous with 'rm -rf'. Please ensure it's within a build directory.")
-endif()
-
-add_custom_target(
-  build ALL
-  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-  COMMAND
-    "${CMAKE_COMMAND}" -E rm -rf -- "${CMAKE_INSTALL_PREFIX}" "${_grpc_build_dir}"
-  COMMAND
-    "${CMAKE_COMMAND}"
-      "-G${CMAKE_GENERATOR}"
-      "-S${SOURCE_DIR}"
-      "-B${_grpc_build_dir}"
-      "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-      "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
-      "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
-      "-DCMAKE_CXX_STANDARD=17"
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
-      "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
-      # Force static library builds (disable shared libraries)
-      "-DBUILD_SHARED_LIBS=OFF"
-      "-DgRPC_BUILD_SHARED_LIBS=OFF"
-      "-DgRPC_PREFER_STATIC_LIBS=ON"
-      "-Dprotobuf_BUILD_SHARED_LIBS=OFF"
-      # Symbol visibility control to prevent pollution when statically linked
-      "-DCMAKE_CXX_VISIBILITY_PRESET=hidden"
-      "-DCMAKE_C_VISIBILITY_PRESET=hidden"
-      "-DCMAKE_VISIBILITY_INLINES_HIDDEN=ON"
-      # Linker flags to hide static library symbols in final shared libraries
-      "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
-      "-DCMAKE_EXE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
-      "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
-      # Use already-built zlib instead of rebuilding
-      "-DgRPC_ZLIB_PROVIDER=package"
-      "-DZLIB_ROOT=${ZLIB_ROOT}"
-      "-DZLIB_INCLUDE_DIR=${ZLIB_INCLUDE_DIR}"
-      "-DZLIB_LIBRARY=${ZLIB_LIBRARY}"
-      # Build from submodules
-      "-DgRPC_ABSL_PROVIDER=module"
-      "-DgRPC_CARES_PROVIDER=module"
-      "-DgRPC_RE2_PROVIDER=module"
-      "-DgRPC_SSL_PROVIDER=module"
-      "-DgRPC_PROTOBUF_PROVIDER=module"
-      # Build options
-      "-DgRPC_BUILD_TESTS=OFF"
-      "-DgRPC_BUILD_CSHARP_EXT=OFF"
-      "-DgRPC_BUILD_GRPC_CSHARP_PLUGIN=OFF"
-      "-DgRPC_BUILD_GRPC_NODE_PLUGIN=OFF"
-      "-DgRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF"
-      "-DgRPC_BUILD_GRPC_PHP_PLUGIN=OFF"
-      "-DgRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF"
-      "-DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF"
-      "-DgRPC_INSTALL=ON"
-      "-DCMAKE_INSTALL_LIBDIR=lib"
-      # RPATH: $ORIGIN for libs, $ORIGIN/../lib for bins, path to zlib
-      "-DCMAKE_INSTALL_RPATH=\$ORIGIN:\$ORIGIN/../lib:\$ORIGIN/../../../../../../sysdeps/linux/zlib/build/stage/lib/rocm_sysdeps/lib"
-      "-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON"
-      "-DCMAKE_BUILD_RPATH=${ZLIB_ROOT}/lib"
-      "-DCMAKE_SKIP_BUILD_RPATH=OFF"
-  COMMAND
-    "${CMAKE_COMMAND}" --build "${_grpc_build_dir}" -j "${PAR_JOBS}"
-  COMMAND
-    "${CMAKE_COMMAND}" --install "${_grpc_build_dir}"
-  COMMAND
-    "${CMAKE_COMMAND}" -E env
-      "THEROCK_SOURCE_DIR=${THEROCK_SOURCE_DIR}" --
-    bash "${CMAKE_CURRENT_SOURCE_DIR}/patch_install.sh" ${CMAKE_INSTALL_PREFIX}
-  VERBATIM
-)
+project(therock-grpc-wrapper NONE)
+message(FATAL_ERROR
+  "third-party/grpc/CMakeLists.txt is intended to be included via TheRock super-project.\n"
+  "Please configure and build gRPC through TheRock instead.")

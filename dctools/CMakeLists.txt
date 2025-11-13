@@ -5,6 +5,18 @@ if(THEROCK_ENABLE_RDC)
   # Uses statically-linked gRPC with hidden symbol visibility to prevent ODR violations.
   # Dependencies are discovered via CMAKE_PREFIX_PATH and find_package().
 
+  # RDC requires gRPC build tools (protoc + grpc_cpp_plugin) at configure time.
+  # Point GRPC_ROOT to the staged therock-grpc installation so the plugin finds
+  # its dependent libraries (librocm_sysdeps_z, etc).
+  if(NOT TARGET ${THEROCK_BUNDLED_GRPC})
+    message(FATAL_ERROR "Expected bundled gRPC target ${THEROCK_BUNDLED_GRPC} to exist")
+  endif()
+  get_target_property(_therock_grpc_stage ${THEROCK_BUNDLED_GRPC} THEROCK_STAGE_DIR)
+  if(NOT _therock_grpc_stage)
+    message(FATAL_ERROR "Failed to locate stage directory for ${THEROCK_BUNDLED_GRPC}")
+  endif()
+  set(_therock_grpc_root "${_therock_grpc_stage}/lib/rocm_sysdeps")
+
   therock_cmake_subproject_declare(rdc
     EXTERNAL_SOURCE_DIR "${THEROCK_ROCM_SYSTEMS_SOURCE_DIR}/projects/rdc"
     BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/rdc"
@@ -18,6 +30,7 @@ if(THEROCK_ENABLE_RDC)
       -DBUILD_TESTS=${THEROCK_BUILD_TESTING}
       -DHIP_PLATFORM=amd
       -DCMAKE_CXX_STANDARD=17
+      -DGRPC_ROOT=${_therock_grpc_root}
 
     BUILD_DEPS
       amd-llvm

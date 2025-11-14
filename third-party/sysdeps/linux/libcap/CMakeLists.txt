@@ -50,58 +50,55 @@ project(LIBCAP_BUILD)
 
 include(ProcessorCount)
 ProcessorCount(PAR_JOBS)
+if(NOT PAR_JOBS OR PAR_JOBS EQUAL 0)
+  set(PAR_JOBS 1)
+endif()
+
+if(CMAKE_MAKE_PROGRAM)
+  set(_libcap_make "${CMAKE_MAKE_PROGRAM}")
+else()
+  find_program(_libcap_make make REQUIRED)
+endif()
 
 if(NOT PATCHELF)
   message(FATAL_ERROR "Missing PATCHELF from super-project")
 endif()
 
-# Set variable for reused path to improve code maintainability
-set(_libcap_source_dir "${CMAKE_CURRENT_BINARY_DIR}/s")
-
-# Safety check: Prevent accidental deletion of system directories with 'rm -rf'
-# Two-layer protection:
-#   1. Blacklist: Reject critical system paths (/, /usr, /usr/local)
-#   2. Whitelist: Require path contains "build" (typical build directory pattern)
-# This allows flexibility for developers (e.g., /home/user/project/build) while
-# preventing accidental deletion of system directories or non-build paths.
-if(CMAKE_INSTALL_PREFIX STREQUAL "/" OR 
-   CMAKE_INSTALL_PREFIX STREQUAL "/usr" OR
-   CMAKE_INSTALL_PREFIX STREQUAL "/usr/local" OR
-   NOT CMAKE_INSTALL_PREFIX MATCHES "/build")
-  message(FATAL_ERROR 
-    "libcap: CMAKE_INSTALL_PREFIX appears to be outside a build directory.\n"
-    "  CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}\n"
-    "This is dangerous with 'rm -rf'. Please ensure it's within a build directory.")
+# Safety check: Prevent accidental deletion of directories outside the build tree.
+cmake_path(CONVERT "${CMAKE_INSTALL_PREFIX}" TO_ABSOLUTE_PATH _libcap_install_abs)
+cmake_path(CONVERT "${CMAKE_CURRENT_BINARY_DIR}" TO_ABSOLUTE_PATH _libcap_build_abs)
+cmake_path(IS_PREFIX "${_libcap_build_abs}" "${_libcap_install_abs}" NORMALIZE _libcap_prefix_guard)
+if(NOT _libcap_prefix_guard)
+  message(FATAL_ERROR
+    "libcap: CMAKE_INSTALL_PREFIX (${CMAKE_INSTALL_PREFIX}) must reside under ${CMAKE_CURRENT_BINARY_DIR} to safely run rm -rf.")
 endif()
 
-add_custom_target(
-  build ALL
-  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-  COMMAND
-    "${CMAKE_COMMAND}" -E rm -rf -- "${CMAKE_INSTALL_PREFIX}" "${_libcap_source_dir}"
-  COMMAND
-    "${CMAKE_COMMAND}" -E copy_directory "${SOURCE_DIR}" "${_libcap_source_dir}"
-  COMMAND
-    make -C "${_libcap_source_dir}/libcap"
-      -j "${PAR_JOBS}"
-      prefix="${CMAKE_INSTALL_PREFIX}"
-      lib=lib
-      GOLANG=no
-      PAM_CAP=no
-      RAISE_SETFCAP=no
-  COMMAND
-    make -C "${_libcap_source_dir}/libcap"
-      install
-      prefix="${CMAKE_INSTALL_PREFIX}"
-      lib=lib
-      GOLANG=no
-      PAM_CAP=no
-      RAISE_SETFCAP=no
-  COMMAND
-    "${CMAKE_COMMAND}" -E env
-      "PATCHELF=${PATCHELF}"
-      "THEROCK_SOURCE_DIR=${THEROCK_SOURCE_DIR}"
-      "Python3_EXECUTABLE=${Python3_EXECUTABLE}" --
-    bash "${CMAKE_CURRENT_SOURCE_DIR}/patch_install.sh" ${CMAKE_INSTALL_PREFIX}
-  VERBATIM
+set(_libcap_make_args
+  prefix=<INSTALL_DIR>
+  lib=lib
+  GOLANG=no
+  PAM_CAP=no
+  RAISE_SETFCAP=no
 )
+
+ExternalProject_Add(libcap-build
+  DOWNLOAD_COMMAND ""
+  SOURCE_DIR "${SOURCE_DIR}/libcap"
+  CONFIGURE_COMMAND ""
+  BUILD_COMMAND
+    "${_libcap_make}" -C "<SOURCE_DIR>" -j "${PAR_JOBS}" ${_libcap_make_args}
+  INSTALL_COMMAND
+    "${_libcap_make}" -C "<SOURCE_DIR>" install ${_libcap_make_args}
+    COMMAND
+      "${CMAKE_COMMAND}" -E env
+        "PATCHELF=${PATCHELF}"
+        "THEROCK_SOURCE_DIR=${THEROCK_SOURCE_DIR}"
+        "Python3_EXECUTABLE=${Python3_EXECUTABLE}" --
+      bash "${CMAKE_CURRENT_SOURCE_DIR}/patch_install.sh" "<INSTALL_DIR>"
+  INSTALL_DIR "${CMAKE_INSTALL_PREFIX}"
+  BUILD_ALWAYS ON
+  LOG_BUILD ON
+  LOG_INSTALL ON
+)
+
+add_custom_target(libcap ALL DEPENDS libcap-build)

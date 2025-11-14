@@ -183,7 +183,7 @@ option(THEROCK_ENABLE_COMM_LIBS "Enable building of comm libraries" "${THEROCK_E
 option(THEROCK_ENABLE_MATH_LIBS "Enable building of math libraries" "${THEROCK_ENABLE_ALL}")
 option(THEROCK_ENABLE_ML_LIBS "Enable building of ML libraries" "${THEROCK_ENABLE_ALL}")
 option(THEROCK_ENABLE_PROFILER "Enable building the profiler libraries" "${THEROCK_ENABLE_ALL}")
-option(THEROCK_ENABLE_SYS_TOOLS "Enable building of system tools" "${THEROCK_ENABLE_ALL}")
+option(THEROCK_ENABLE_DC_TOOLS "Enable building of data center tools" "${THEROCK_ENABLE_ALL}")
 option(THEROCK_ENABLE_HOST_MATH "Build all bundled host math libraries by default" OFF)
 option(THEROCK_RESET_FEATURES "One-shot flag which forces all feature flags to their default state for this configuration run" OFF)
 
@@ -264,10 +264,15 @@ endif()
 if(NOT WIN32)
   # RDC is Linux-only and requires rocprofiler-sdk v3
   therock_add_feature(RDC
-    GROUP SYS_TOOLS
+    GROUP DC_TOOLS
     DESCRIPTION "Enables ROCm Data Center Tool (RDC)"
     REQUIRES CORE_RUNTIME ROCPROFV3
   )
+endif()
+if(NOT THEROCK_ENABLE_DC_TOOLS AND THEROCK_ENABLE_RDC)
+  message(STATUS "Disabling RDC because THEROCK_ENABLE_DC_TOOLS is OFF")
+  set(THEROCK_ENABLE_RDC OFF CACHE BOOL
+      "Enables ROCm Data Center Tool (RDC)" FORCE)
 endif()
 
 # Comm-libs Features.
@@ -481,7 +486,11 @@ add_subdirectory(core)
 # depend on. The profiler itself is independent.
 add_subdirectory(profiler)
 # Data center tools (RDC, etc.)
-add_subdirectory(dctools)
+if(THEROCK_ENABLE_DC_TOOLS AND THEROCK_ENABLE_RDC AND NOT WIN32)
+  add_subdirectory(dctools)
+elseif(THEROCK_ENABLE_RDC)
+  message(WARNING "THEROCK_ENABLE_RDC is ON but requirements were not met (Linux + DC_TOOLS). Skipping.")
+endif()
 add_subdirectory(comm-libs)
 add_subdirectory(math-libs)
 add_subdirectory(ml-libs)

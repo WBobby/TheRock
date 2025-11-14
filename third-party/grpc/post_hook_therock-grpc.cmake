@@ -7,17 +7,7 @@ if(NOT DEFINED THEROCK_SOURCE_DIR OR THEROCK_SOURCE_DIR STREQUAL "")
   message(FATAL_ERROR "gRPC post-install hook: THEROCK_SOURCE_DIR is not defined")
 endif()
 
-# Derive the staged zlib lib directory up-front so we can embed the path inside
-# the generated install code.
-set(_zlib_stage_lib_dir "")
-if(DEFINED THEROCK_PACKAGE_DIR_ZLIB)
-  set(_zlib_dist_cmake_dir "${THEROCK_PACKAGE_DIR_ZLIB}")
-  if(_zlib_dist_cmake_dir)
-    get_filename_component(_zlib_dist_lib_dir "${_zlib_dist_cmake_dir}" DIRECTORY)
-    get_filename_component(_zlib_dist_lib_dir "${_zlib_dist_lib_dir}" DIRECTORY)
-    string(REPLACE "/dist/" "/stage/" _zlib_stage_lib_dir "${_zlib_dist_lib_dir}")
-  endif()
-endif()
+set(_zlib_stage_lib_dir "${THEROCK_GRPC_ZLIB_STAGE_LIB_DIR}")
 
 set(_grpc_post_install_code [=[
   set(_grpc_patch_script "@_grpc_patch_script@")
@@ -47,16 +37,16 @@ set(_grpc_post_install_code [=[
       "Error:\n${_grpc_patch_error}\n")
   endif()
 
-  if(NOT _grpc_patch_output STREQUAL "")
+  if(_grpc_patch_output)
     message(STATUS "${_grpc_patch_output}")
   endif()
-  if(NOT _grpc_patch_error STREQUAL "")
+  if(_grpc_patch_error)
     message(STATUS "${_grpc_patch_error}")
   endif()
 
-  if(NOT _zlib_stage_lib_dir STREQUAL "")
+  if(_zlib_stage_lib_dir AND EXISTS "${_zlib_stage_lib_dir}")
     set(_grpc_lib_dir "${CMAKE_INSTALL_PREFIX}/lib")
-    if(EXISTS "${_zlib_stage_lib_dir}" AND EXISTS "${_grpc_lib_dir}")
+    if(EXISTS "${_grpc_lib_dir}")
       file(GLOB _zlib_shared_libs
         "${_zlib_stage_lib_dir}/librocm_sysdeps_z.so"
         "${_zlib_stage_lib_dir}/librocm_sysdeps_z.so.*"

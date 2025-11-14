@@ -1,5 +1,10 @@
 if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   # gRPC static library for RDC
+  if(NOT DEFINED THEROCK_GRPC_ZLIB_STAGE_LIB_DIR OR "${THEROCK_GRPC_ZLIB_STAGE_LIB_DIR}" STREQUAL "")
+    message(FATAL_ERROR "THEROCK_GRPC_ZLIB_STAGE_LIB_DIR must be provided by the super-project before configuring gRPC")
+  endif()
+  set(_therock_zlib_stage_lib_dir "${THEROCK_GRPC_ZLIB_STAGE_LIB_DIR}")
+
   set(_source_dir "${CMAKE_CURRENT_BINARY_DIR}/source")
   set(_download_stamp "${_source_dir}/download.stamp")
 
@@ -51,7 +56,7 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
       "-DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF"
       "-DgRPC_INSTALL=ON"
       "-DCMAKE_INSTALL_LIBDIR=lib"
-      "-DCMAKE_INSTALL_RPATH=\\$ORIGIN:\\$ORIGIN/../lib:\\$ORIGIN/../../../../../../sysdeps/linux/zlib/build/stage/lib/rocm_sysdeps/lib"
+      "-DCMAKE_INSTALL_RPATH=\\$ORIGIN:\\$ORIGIN/../lib"
       "-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON"
       "-DCMAKE_SKIP_BUILD_RPATH=OFF"
 
@@ -79,6 +84,7 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     CMAKE_INCLUDES
       "${CMAKE_CURRENT_SOURCE_DIR}/post_hook_therock-grpc.cmake"
   )
+  set(THEROCK_GRPC_ZLIB_STAGE_LIB_DIR "${_therock_zlib_stage_lib_dir}")
   therock_cmake_subproject_provide_package(therock-grpc gRPC lib/rocm_sysdeps/lib/cmake/grpc)
   therock_cmake_subproject_provide_package(therock-grpc protobuf lib/rocm_sysdeps/lib/cmake/protobuf)
   therock_cmake_subproject_activate(therock-grpc)

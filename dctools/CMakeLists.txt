@@ -8,6 +8,10 @@ if(THEROCK_ENABLE_RDC)
   # RDC requires gRPC build tools (protoc + grpc_cpp_plugin) at configure time.
   # Point GRPC_ROOT to the staged therock-grpc installation so the plugin finds
   # its dependent libraries (librocm_sysdeps_z, etc).
+  #
+  # TODO (RFC0007): Migrate RDC to use find_package(gRPC CONFIG) for modern CMake discovery.
+  # Current approach uses -DGRPC_ROOT which is legacy but necessary until RDC's build system
+  # is updated in the rocm-systems/projects/rdc repository. See RFC0007 lines 281-297.
   if(NOT TARGET ${THEROCK_BUNDLED_GRPC})
     message(FATAL_ERROR "Expected bundled gRPC target ${THEROCK_BUNDLED_GRPC} to exist")
   endif()

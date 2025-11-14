@@ -20,5 +20,10 @@ include = [
 include = [
   "bin/**",
   "libexec/**",
-  "share/rdc/**",
+  "share/rdc/conf/**",
+]
+
+[components.test."dctools/rdc/stage/portable-rdc"]
+include = [
+  "share/rdc/rdctst_tests/**",
 ]

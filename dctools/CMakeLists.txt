@@ -42,7 +42,7 @@ if(THEROCK_ENABLE_RDC)
       -DBUILD_STANDALONE=ON
       -DBUILD_RUNTIME=ON
       -DBUILD_RVS=OFF
-      # -DBUILD_TESTS=${THEROCK_BUILD_TESTING}
+      -DBUILD_TESTS=${THEROCK_BUILD_TESTING}
       -DHIP_PLATFORM=amd
       -DCMAKE_CXX_STANDARD=17
       -DGRPC_ROOT=${_therock_grpc_root}
@@ -120,6 +120,7 @@ if(THEROCK_ENABLE_RDC)
       doc
       lib
       run
+      test
     SUBPROJECT_DEPS
       ${_rdc_artifact_deps}
   )

@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+
+0f6c86d2以及其之后的创建或改动的文件是当前项目的实现内容，分析这些改动的代码部分，以及项目中docs/design/manylinux_builds.md和docs中的其他md文件，还有相关目录中的cmake文件以及与这些cmake调用的文件。
+
+参考docs/development/adding_tests.md文件，修改测试部分。
+参考docs/development/artifacts.md文件，修改artifact部分。
+
+当前TheRock仓库是构建ROCm的平台，其中rocm-libraries和rocm-systems是保存ROCm源代码的目录，TheRock的实现部分应该与这些源代码部分解耦。
+
+agent状况下，不要运行构建命令，因为构建要花10几分钟。需要构建时，提示我，我手动运行。

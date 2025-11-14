@@ -1,0 +1,14 @@
+---
+alwaysApply: false
+---
+
+Review questions:
+
+I am not sure we want to add another top level directory as this also will need to be reworked with regards to https://github.com/ROCm/TheRock/blob/main/docs/rfcs/RFC0003-Build-Tree-Normalization.md.
+
+
+Any dependency should be picked up via find_package. There shouldn't be any hardcoded paths to any deos.
+Furthermore, if gRPC is a separate package this package itself needs to install whatever is needed, it should not be done y RDC.
+
+gRPC即是RDC的运行时依赖，也是构建时的依赖。
+

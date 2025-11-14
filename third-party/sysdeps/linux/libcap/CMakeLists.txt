@@ -48,29 +48,31 @@ endif()
 cmake_minimum_required(VERSION 3.25)
 project(LIBCAP_BUILD)
 
+include(ExternalProject)
 include(ProcessorCount)
 ProcessorCount(PAR_JOBS)
 if(NOT PAR_JOBS OR PAR_JOBS EQUAL 0)
   set(PAR_JOBS 1)
 endif()
 
-if(CMAKE_MAKE_PROGRAM)
-  set(_libcap_make "${CMAKE_MAKE_PROGRAM}")
-else()
-  find_program(_libcap_make make REQUIRED)
-endif()
+find_program(_libcap_make NAMES make gmake REQUIRED)
 
 if(NOT PATCHELF)
   message(FATAL_ERROR "Missing PATCHELF from super-project")
 endif()
 
 # Safety check: Prevent accidental deletion of directories outside the build tree.
-cmake_path(CONVERT "${CMAKE_INSTALL_PREFIX}" TO_ABSOLUTE_PATH _libcap_install_abs)
-cmake_path(CONVERT "${CMAKE_CURRENT_BINARY_DIR}" TO_ABSOLUTE_PATH _libcap_build_abs)
-cmake_path(IS_PREFIX "${_libcap_build_abs}" "${_libcap_install_abs}" NORMALIZE _libcap_prefix_guard)
-if(NOT _libcap_prefix_guard)
+get_filename_component(_libcap_install_abs "${CMAKE_INSTALL_PREFIX}" ABSOLUTE)
+if(DEFINED THEROCK_STAGE_INSTALL_ROOT AND THEROCK_STAGE_INSTALL_ROOT)
+  get_filename_component(_libcap_stage_abs "${THEROCK_STAGE_INSTALL_ROOT}" ABSOLUTE)
+else()
+  get_filename_component(_libcap_stage_abs "${CMAKE_CURRENT_BINARY_DIR}" ABSOLUTE)
+endif()
+string(LENGTH "${_libcap_stage_abs}" _libcap_stage_len)
+string(SUBSTRING "${_libcap_install_abs}" 0 ${_libcap_stage_len} _libcap_install_prefix)
+if(NOT _libcap_install_prefix STREQUAL "${_libcap_stage_abs}")
   message(FATAL_ERROR
-    "libcap: CMAKE_INSTALL_PREFIX (${CMAKE_INSTALL_PREFIX}) must reside under ${CMAKE_CURRENT_BINARY_DIR} to safely run rm -rf.")
+    "libcap: CMAKE_INSTALL_PREFIX (${CMAKE_INSTALL_PREFIX}) must reside under ${_libcap_stage_abs} to safely run rm -rf.")
 endif()
 
 set(_libcap_make_args

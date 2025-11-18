@@ -63,21 +63,6 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     RUNTIME_DEPS
       therock-zlib
 
-    INSTALL_DESTINATION
-      lib/rocm_sysdeps
-
-    INTERFACE_INCLUDE_DIRS
-      lib/rocm_sysdeps/include
-
-    INTERFACE_LINK_DIRS
-      lib/rocm_sysdeps/lib
-
-    INTERFACE_INSTALL_RPATH_DIRS
-      lib/rocm_sysdeps/lib
-
-    INTERFACE_PKG_CONFIG_DIRS
-      lib/rocm_sysdeps/lib/pkgconfig
-
     EXTRA_DEPENDS
       "${_download_stamp}"
 
@@ -85,9 +70,10 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
       "${CMAKE_CURRENT_SOURCE_DIR}/post_hook_therock-grpc.cmake"
   )
   set(THEROCK_GRPC_ZLIB_STAGE_LIB_DIR "${_therock_zlib_stage_lib_dir}")
-  therock_cmake_subproject_provide_package(therock-grpc gRPC lib/rocm_sysdeps/lib/cmake/grpc)
-  therock_cmake_subproject_provide_package(therock-grpc protobuf lib/rocm_sysdeps/lib/cmake/protobuf)
+  therock_cmake_subproject_provide_package(therock-grpc gRPC lib/cmake/grpc)
+  therock_cmake_subproject_provide_package(therock-grpc protobuf lib/cmake/protobuf)
   therock_cmake_subproject_activate(therock-grpc)
+  add_dependencies(therock-third-party therock-grpc)
 
   return()
 endif()

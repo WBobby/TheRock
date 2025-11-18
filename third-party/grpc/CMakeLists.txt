@@ -51,10 +51,6 @@ therock_cmake_subproject_declare(therock-grpc
 
   RUNTIME_DEPS
     therock-zlib
-
-  CMAKE_INCLUDES
-    "${CMAKE_CURRENT_SOURCE_DIR}/pre_hook_therock-grpc.cmake"
-    "${CMAKE_CURRENT_SOURCE_DIR}/post_hook_therock-grpc.cmake"
 )
 therock_cmake_subproject_provide_package(therock-grpc gRPC lib/cmake/grpc)
 therock_cmake_subproject_provide_package(therock-grpc protobuf lib/cmake/protobuf)

@@ -16,7 +16,9 @@ endif()
 if(THEROCK_ENABLE_RDC)
   # RDC builds with statically linked gRPC
   # gRPC is specified as a BUILD_DEPS, which automatically handles package configuration
-  # See: docs/rfcs/RFC0007-rdc-therock-integration.md
+
+  # Get gRPC stage directory for RDC's GRPC_ROOT requirement
+  get_target_property(_grpc_stage therock-grpc THEROCK_STAGE_DIR)
 
   therock_cmake_subproject_declare(rdc
     EXTERNAL_SOURCE_DIR "${THEROCK_ROCM_SYSTEMS_SOURCE_DIR}/projects/rdc"
@@ -31,6 +33,7 @@ if(THEROCK_ENABLE_RDC)
       -DBUILD_TESTS=${THEROCK_BUILD_TESTING}
       -DHIP_PLATFORM=amd
       -DCMAKE_CXX_STANDARD=17
+      -DGRPC_ROOT=${_grpc_stage}
 
     BUILD_DEPS
       therock-grpc

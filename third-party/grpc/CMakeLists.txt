@@ -1,85 +1,75 @@
-if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  # gRPC static library for RDC
-  if(NOT DEFINED THEROCK_GRPC_ZLIB_STAGE_LIB_DIR OR "${THEROCK_GRPC_ZLIB_STAGE_LIB_DIR}" STREQUAL "")
-    message(FATAL_ERROR "THEROCK_GRPC_ZLIB_STAGE_LIB_DIR must be provided by the super-project before configuring gRPC")
-  endif()
-  set(_therock_zlib_stage_lib_dir "${THEROCK_GRPC_ZLIB_STAGE_LIB_DIR}")
-
-  set(_source_dir "${CMAKE_CURRENT_BINARY_DIR}/source")
-  set(_download_stamp "${_source_dir}/download.stamp")
-
-  therock_subproject_fetch(therock-grpc-sources
-    CMAKE_PROJECT
-    SOURCE_DIR "${_source_dir}"
-    GIT_REPOSITORY "https://github.com/grpc/grpc.git"
-    GIT_TAG "v1.67.1"
-    GIT_SHALLOW ON
-    GIT_SUBMODULES_RECURSE ON
-    TOUCH "${_download_stamp}"
-  )
-
-  set(_binary_dir "${CMAKE_CURRENT_BINARY_DIR}/build")
-
-  therock_cmake_subproject_declare(therock-grpc
-    EXTERNAL_SOURCE_DIR "${_source_dir}"
-    BINARY_DIR "${_binary_dir}"
-    NO_MERGE_COMPILE_COMMANDS
-    BACKGROUND_BUILD
-    OUTPUT_ON_FAILURE
-
-    CMAKE_ARGS
-      -DCMAKE_CXX_STANDARD=17
-      -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-      -DBUILD_SHARED_LIBS=OFF
-      -DgRPC_BUILD_SHARED_LIBS=OFF
-      -DgRPC_PREFER_STATIC_LIBS=ON
-      -Dprotobuf_BUILD_SHARED_LIBS=OFF
-      -DCMAKE_CXX_VISIBILITY_PRESET=hidden
-      -DCMAKE_C_VISIBILITY_PRESET=hidden
-      -DCMAKE_VISIBILITY_INLINES_HIDDEN=ON
-      "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
-      "-DCMAKE_EXE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
-      "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
-      "-DgRPC_ZLIB_PROVIDER=package"
-      "-DgRPC_ABSL_PROVIDER=module"
-      "-DgRPC_CARES_PROVIDER=module"
-      "-DgRPC_RE2_PROVIDER=module"
-      "-DgRPC_SSL_PROVIDER=module"
-      "-DgRPC_PROTOBUF_PROVIDER=module"
-      "-DgRPC_BUILD_TESTS=OFF"
-      "-DgRPC_BUILD_CSHARP_EXT=OFF"
-      "-DgRPC_BUILD_GRPC_CSHARP_PLUGIN=OFF"
-      "-DgRPC_BUILD_GRPC_NODE_PLUGIN=OFF"
-      "-DgRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF"
-      "-DgRPC_BUILD_GRPC_PHP_PLUGIN=OFF"
-      "-DgRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF"
-      "-DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF"
-      "-DgRPC_INSTALL=ON"
-      "-DCMAKE_INSTALL_LIBDIR=lib"
-      "-DCMAKE_INSTALL_RPATH=\\$ORIGIN:\\$ORIGIN/../lib"
-      "-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON"
-      "-DCMAKE_SKIP_BUILD_RPATH=OFF"
-
-    RUNTIME_DEPS
-      therock-zlib
-
-    EXTRA_DEPENDS
-      "${_download_stamp}"
-
-    CMAKE_INCLUDES
-      "${CMAKE_CURRENT_SOURCE_DIR}/post_hook_therock-grpc.cmake"
-  )
-  set(THEROCK_GRPC_ZLIB_STAGE_LIB_DIR "${_therock_zlib_stage_lib_dir}")
-  therock_cmake_subproject_provide_package(therock-grpc gRPC lib/cmake/grpc)
-  therock_cmake_subproject_provide_package(therock-grpc protobuf lib/cmake/protobuf)
-  therock_cmake_subproject_activate(therock-grpc)
-  add_dependencies(therock-third-party therock-grpc)
-
-  return()
+# gRPC static library for RDC
+if(NOT DEFINED THEROCK_GRPC_ZLIB_STAGE_LIB_DIR OR "${THEROCK_GRPC_ZLIB_STAGE_LIB_DIR}" STREQUAL "")
+  message(FATAL_ERROR "THEROCK_GRPC_ZLIB_STAGE_LIB_DIR must be provided by the super-project before configuring gRPC")
 endif()
+set(_therock_zlib_stage_lib_dir "${THEROCK_GRPC_ZLIB_STAGE_LIB_DIR}")
 
-cmake_minimum_required(VERSION 3.25)
-project(therock-grpc-wrapper NONE)
-message(FATAL_ERROR
-  "third-party/grpc/CMakeLists.txt is intended to be included via TheRock super-project.\n"
-  "Please configure and build gRPC through TheRock instead.")
+set(_source_dir "${CMAKE_CURRENT_BINARY_DIR}/source")
+set(_download_stamp "${_source_dir}/download.stamp")
+
+therock_subproject_fetch(therock-grpc-sources
+  CMAKE_PROJECT
+  SOURCE_DIR "${_source_dir}"
+  GIT_REPOSITORY "https://github.com/grpc/grpc.git"
+  GIT_TAG "v1.67.1"
+  GIT_SHALLOW ON
+  GIT_SUBMODULES_RECURSE ON
+  TOUCH "${_download_stamp}"
+)
+
+set(_binary_dir "${CMAKE_CURRENT_BINARY_DIR}/build")
+
+therock_cmake_subproject_declare(therock-grpc
+  EXTERNAL_SOURCE_DIR "${_source_dir}"
+  BINARY_DIR "${_binary_dir}"
+  NO_MERGE_COMPILE_COMMANDS
+  BACKGROUND_BUILD
+  OUTPUT_ON_FAILURE
+
+  CMAKE_ARGS
+    -DCMAKE_CXX_STANDARD=17
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+    -DBUILD_SHARED_LIBS=OFF
+    -DgRPC_BUILD_SHARED_LIBS=OFF
+    -DgRPC_PREFER_STATIC_LIBS=ON
+    -Dprotobuf_BUILD_SHARED_LIBS=OFF
+    -DCMAKE_CXX_VISIBILITY_PRESET=hidden
+    -DCMAKE_C_VISIBILITY_PRESET=hidden
+    -DCMAKE_VISIBILITY_INLINES_HIDDEN=ON
+    "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
+    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
+    "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--exclude-libs,ALL"
+    "-DgRPC_ZLIB_PROVIDER=package"
+    "-DgRPC_ABSL_PROVIDER=module"
+    "-DgRPC_CARES_PROVIDER=module"
+    "-DgRPC_RE2_PROVIDER=module"
+    "-DgRPC_SSL_PROVIDER=module"
+    "-DgRPC_PROTOBUF_PROVIDER=module"
+    "-DgRPC_BUILD_TESTS=OFF"
+    "-DgRPC_BUILD_CSHARP_EXT=OFF"
+    "-DgRPC_BUILD_GRPC_CSHARP_PLUGIN=OFF"
+    "-DgRPC_BUILD_GRPC_NODE_PLUGIN=OFF"
+    "-DgRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF"
+    "-DgRPC_BUILD_GRPC_PHP_PLUGIN=OFF"
+    "-DgRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF"
+    "-DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF"
+    "-DgRPC_INSTALL=ON"
+    "-DCMAKE_INSTALL_LIBDIR=lib"
+    "-DCMAKE_INSTALL_RPATH=\\$ORIGIN:\\$ORIGIN/../lib"
+    "-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON"
+    "-DCMAKE_SKIP_BUILD_RPATH=OFF"
+
+  RUNTIME_DEPS
+    therock-zlib
+
+  EXTRA_DEPENDS
+    "${_download_stamp}"
+
+  CMAKE_INCLUDES
+    "${CMAKE_CURRENT_SOURCE_DIR}/post_hook_therock-grpc.cmake"
+)
+set(THEROCK_GRPC_ZLIB_STAGE_LIB_DIR "${_therock_zlib_stage_lib_dir}")
+therock_cmake_subproject_provide_package(therock-grpc gRPC lib/cmake/grpc)
+therock_cmake_subproject_provide_package(therock-grpc protobuf lib/cmake/protobuf)
+therock_cmake_subproject_activate(therock-grpc)
+add_dependencies(therock-third-party therock-grpc)

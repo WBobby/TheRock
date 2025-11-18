@@ -51,13 +51,10 @@ if(THEROCK_ENABLE_RDC)
     INTERFACE_INSTALL_RPATH_DIRS
       lib
   )
-
   therock_cmake_subproject_glob_c_sources(rdc
     SUBDIRS .
   )
-
   therock_cmake_subproject_provide_package(rdc rdc lib/cmake/rdc)
-
   therock_cmake_subproject_activate(rdc)
 
   # RDC validation tests (runtime tests excluded - require GPU hardware)

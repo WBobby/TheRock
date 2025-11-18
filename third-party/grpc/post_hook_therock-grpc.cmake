@@ -7,11 +7,8 @@ if(NOT DEFINED THEROCK_SOURCE_DIR OR THEROCK_SOURCE_DIR STREQUAL "")
   message(FATAL_ERROR "gRPC post-install hook: THEROCK_SOURCE_DIR is not defined")
 endif()
 
-set(_zlib_stage_lib_dir "${THEROCK_GRPC_ZLIB_STAGE_LIB_DIR}")
-
 set(_grpc_post_install_code [=[
   set(_grpc_patch_script "@_grpc_patch_script@")
-  set(_zlib_stage_lib_dir "@_zlib_stage_lib_dir@")
   set(_cmake_command "@CMAKE_COMMAND@")
   set(_working_directory "@CMAKE_CURRENT_BINARY_DIR@")
 
@@ -42,24 +39,6 @@ set(_grpc_post_install_code [=[
   endif()
   if(_grpc_patch_error)
     message(STATUS "${_grpc_patch_error}")
-  endif()
-
-  if(_zlib_stage_lib_dir AND EXISTS "${_zlib_stage_lib_dir}")
-    set(_grpc_lib_dir "${CMAKE_INSTALL_PREFIX}/lib")
-    if(EXISTS "${_grpc_lib_dir}")
-      file(GLOB _zlib_shared_libs
-        "${_zlib_stage_lib_dir}/librocm_sysdeps_z.so"
-        "${_zlib_stage_lib_dir}/librocm_sysdeps_z.so.*"
-      )
-      foreach(_zlib_lib ${_zlib_shared_libs})
-        get_filename_component(_lib_name "${_zlib_lib}" NAME)
-        set(_dest "${_grpc_lib_dir}/${_lib_name}")
-        if(NOT EXISTS "${_dest}")
-          file(CREATE_LINK "${_zlib_lib}" "${_dest}" SYMBOLIC)
-          message(STATUS "Linked ${_dest} -> ${_zlib_lib}")
-        endif()
-      endforeach()
-    endif()
   endif()
 ]=])
 

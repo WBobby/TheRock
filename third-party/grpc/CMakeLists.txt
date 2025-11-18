@@ -1,26 +1,17 @@
 # gRPC static library for RDC
-if(NOT DEFINED THEROCK_GRPC_ZLIB_STAGE_LIB_DIR OR "${THEROCK_GRPC_ZLIB_STAGE_LIB_DIR}" STREQUAL "")
-  message(FATAL_ERROR "THEROCK_GRPC_ZLIB_STAGE_LIB_DIR must be provided by the super-project before configuring gRPC")
-endif()
-set(_therock_zlib_stage_lib_dir "${THEROCK_GRPC_ZLIB_STAGE_LIB_DIR}")
-
-set(_source_dir "${CMAKE_CURRENT_BINARY_DIR}/source")
-set(_download_stamp "${_source_dir}/download.stamp")
-
 therock_subproject_fetch(therock-grpc-sources
   CMAKE_PROJECT
-  SOURCE_DIR "${_source_dir}"
+  # TODO: Mirror this repository to S3 for better availability and faster downloads
   GIT_REPOSITORY "https://github.com/grpc/grpc.git"
   GIT_TAG "v1.67.1"
   GIT_SHALLOW ON
   GIT_SUBMODULES_RECURSE ON
-  TOUCH "${_download_stamp}"
 )
 
 set(_binary_dir "${CMAKE_CURRENT_BINARY_DIR}/build")
 
 therock_cmake_subproject_declare(therock-grpc
-  EXTERNAL_SOURCE_DIR "${_source_dir}"
+  EXTERNAL_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/source"
   BINARY_DIR "${_binary_dir}"
   NO_MERGE_COMPILE_COMMANDS
   BACKGROUND_BUILD
@@ -62,13 +53,9 @@ therock_cmake_subproject_declare(therock-grpc
   RUNTIME_DEPS
     therock-zlib
 
-  EXTRA_DEPENDS
-    "${_download_stamp}"
-
   CMAKE_INCLUDES
     "${CMAKE_CURRENT_SOURCE_DIR}/post_hook_therock-grpc.cmake"
 )
-set(THEROCK_GRPC_ZLIB_STAGE_LIB_DIR "${_therock_zlib_stage_lib_dir}")
 therock_cmake_subproject_provide_package(therock-grpc gRPC lib/cmake/grpc)
 therock_cmake_subproject_provide_package(therock-grpc protobuf lib/cmake/protobuf)
 therock_cmake_subproject_activate(therock-grpc)

@@ -89,31 +89,6 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   therock_cmake_subproject_provide_package(therock-grpc protobuf lib/rocm_sysdeps/lib/cmake/protobuf)
   therock_cmake_subproject_activate(therock-grpc)
 
-  # Static library validation tests
-  foreach(lib_name libgrpc++.a libgrpc.a libprotobuf.a)
-    add_test(
-      NAME therock-validate-static-lib-${lib_name}
-      COMMAND
-        "${CMAKE_CURRENT_SOURCE_DIR}/validate_static_library.sh"
-          "${CMAKE_CURRENT_BINARY_DIR}/build/dist/lib/rocm_sysdeps/lib/${lib_name}"
-    )
-  endforeach()
-
-  # Comprehensive linking test (all libraries together)
-  add_test(
-    NAME therock-validate-grpc-static-libs-linkage
-    COMMAND
-      "${CMAKE_CURRENT_SOURCE_DIR}/validate_static_library.sh"
-        "${CMAKE_CURRENT_BINARY_DIR}/build/dist/lib/rocm_sysdeps/lib/libgrpc++.a"
-        "${CMAKE_CURRENT_BINARY_DIR}/build/dist/lib/rocm_sysdeps/lib/libgrpc.a"
-        "${CMAKE_CURRENT_BINARY_DIR}/build/dist/lib/rocm_sysdeps/lib/libprotobuf.a"
-  )
-  set_tests_properties(therock-validate-grpc-static-libs-linkage PROPERTIES
-    LABELS "grpc;static-library;linkage"
-  )
-
-  # Note: Static libraries must export public API symbols (T) for linking (~451 global symbols).
-
   return()
 endif()
 

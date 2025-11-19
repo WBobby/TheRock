@@ -32,6 +32,7 @@ import sys
 import tarfile
 
 from github_actions_utils import *
+from build_time_report import generate_build_times_report
 
 THEROCK_DIR = Path(__file__).resolve().parent.parent.parent
 PLATFORM = platform.system().lower()
@@ -134,7 +135,7 @@ def index_log_files(build_dir: Path, artifact_group: str):
 
     if log_dir.is_dir():
         log(
-            f"[INFO] Found '{log_dir}' directory. Indexing '*.log' and '*.tar.gz' files..."
+            f"[INFO] Found '{log_dir}' directory. Indexing files..."
         )
         exec(
             [
@@ -143,7 +144,8 @@ def index_log_files(build_dir: Path, artifact_group: str):
                 log_dir.as_posix(),  # unnamed path arg in front of -f
                 "-f",
                 "*.log",
-                "*.tar.gz",  # accepts nargs! Take care not to consume path
+                "*.tar.gz",
+                "build_times.html",  # accepts nargs! Take care not to consume path
             ],
             cwd=Path.cwd(),
         )
@@ -262,12 +264,22 @@ def write_gha_build_summary(artifact_group: str, bucket_url: str):
 
     manifest_url = f"{bucket_url}/manifests/{artifact_group}/therock_manifest.json"
     gha_append_step_summary(f"[TheRock Manifest]({manifest_url})")
+    
+    build_times_url = f"{bucket_url}/logs/{artifact_group}/build_times.html"
+    gha_append_step_summary(f"[Build Times Report]({build_times_url})")
 
 
 def run(args):
     log("Creating Ninja log archive")
     log("--------------------------")
     create_ninja_log_archive(args.build_dir)
+
+    log("Generating build times report")
+    log("-----------------------------")
+    if generate_build_times_report(args.build_dir):
+        log("[INFO] Build times report generated successfully")
+    else:
+        log("[WARN] No build timing data found, skipping report")
 
     log(f"Indexing log files in {str(args.build_dir)}")
     log("------------------")

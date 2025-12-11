@@ -1,7 +1,7 @@
 #!/bin/bash
 # install_rocm_tarball.sh
 #
-# Downloads and installs ROCm from a nightly tarball using wget.
+# Downloads and installs ROCm from a nightly tarball.
 # Architecture supports future extension to other release types and install methods.
 #
 # The tarball is extracted to a versioned directory based on ROCM_VERSION.
@@ -53,11 +53,11 @@ echo "Release Type:    ${RELEASE_TYPE}"
 echo "Tarball URL:     ${TARBALL_URL}"
 echo "=============================================="
 
-# Download tarball using wget
-echo "Downloading tarball using wget..."
+# Download tarball
 TARBALL_FILE="/tmp/rocm-tarball.tar.gz"
 
-wget -q --show-progress -O "$TARBALL_FILE" "$TARBALL_URL" || {
+echo "Downloading tarball..."
+wget -q -O "$TARBALL_FILE" "$TARBALL_URL" || {
     echo "Error: Failed to download tarball from $TARBALL_URL"
     exit 1
 }

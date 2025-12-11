@@ -89,10 +89,3 @@ RUN chmod +x /tmp/install_rocm_tarball.sh && \
 # Configure environment variables
 ENV ROCM_PATH=/opt/rocm
 ENV PATH="/opt/rocm/bin:${PATH}"
-
-# Create render group for GPU access
-# Group ID 109 is commonly used for render group
-RUN groupadd -g 109 render 2>/dev/null || true
-
-# Default command - show ROCm info
-CMD ["rocminfo"]

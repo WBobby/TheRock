@@ -6,8 +6,8 @@
 #
 # Supported distributions:
 #   - Ubuntu 22.04, 24.04 (apt)
-#   - AlmaLinux 8, CentOS, Rocky Linux, RHEL, Fedora (dnf)
-#   - Azure Linux 3, CBL-Mariner (tdnf)
+#   - AlmaLinux 8 (dnf)
+#   - Azure Linux 3 (tdnf)
 
 set -e
 
@@ -26,7 +26,7 @@ DISTRO=$(detect_distro)
 echo "Detected distribution: $DISTRO"
 
 case "$DISTRO" in
-    ubuntu|debian)
+    ubuntu)
         echo "Installing dependencies using apt..."
         apt-get update
         apt-get install -y --no-install-recommends \
@@ -54,7 +54,7 @@ case "$DISTRO" in
         rm -rf /var/lib/apt/lists/*
         ;;
 
-    almalinux|centos|rocky|rhel|fedora)
+    almalinux)
         echo "Installing dependencies using dnf..."
         # Fix AlmaLinux repo to use direct baseurl instead of mirrorlist
         if [ -f /etc/yum.repos.d/almalinux.repo ]; then
@@ -83,7 +83,7 @@ case "$DISTRO" in
         dnf clean all
         ;;
 
-    azurelinux|mariner)
+    azurelinux)
         echo "Installing dependencies using tdnf..."
         tdnf install -y \
             ca-certificates \

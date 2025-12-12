@@ -1,46 +1,44 @@
 # rocm_nightly.Dockerfile
 #
-# Unified Nightly ROCm Docker Image
+# ROCm Docker Image Builder
 # Supports multiple Linux distributions through a single Dockerfile.
 #
 # Supported base images:
-#   - ubuntu:22.04
 #   - ubuntu:24.04
 #   - almalinux:8
 #   - mcr.microsoft.com/azurelinux/base/core:3.0
 #
 # Build arguments:
 #   BASE_IMAGE       - Base Docker image (default: ubuntu:24.04)
-#   ROCM_VERSION     - ROCm nightly version (e.g., 6.5.0rc20250610)
+#   VERSION          - Full version string (e.g., 7.11.0a20251211)
 #   AMDGPU_FAMILY    - AMD GPU family (e.g., gfx110X-all, gfx94X-dcgpu)
-#   INSTALL_PREFIX   - Installation prefix (default: /opt). ROCm will be at /opt/rocm-X.Y/
-#   RELEASE_TYPE     - Release type (default: nightly). Reserved for future extension.
-#   TARBALL_URL      - Custom tarball URL (optional, overrides S3 URL)
+#   RELEASE_TYPE     - Release type (default: nightlies). Options: prereleases, devreleases
+#   TARBALL_URL      - Custom tarball URL (optional, overrides auto-generated URL)
 #
 # Build examples:
 #
-#   # Ubuntu 24.04 + gfx110X
+#   # Ubuntu 24.04 + gfx110X (nightly)
 #   docker build \
 #     --build-arg BASE_IMAGE=ubuntu:24.04 \
-#     --build-arg ROCM_VERSION=6.5.0rc20250610 \
+#     --build-arg VERSION=7.11.0a20251211 \
 #     --build-arg AMDGPU_FAMILY=gfx110X-all \
 #     -f dockerfiles/rocm_nightly.Dockerfile \
 #     -t rocm-nightly:ubuntu24.04-gfx110X \
 #     dockerfiles/
 #
-#   # AlmaLinux 8 + gfx94X
-#   docker build \
+#   # AlmaLinux 8 + gfx94X (nightly)
+#   docker build --network=host \
 #     --build-arg BASE_IMAGE=almalinux:8 \
-#     --build-arg ROCM_VERSION=6.5.0rc20250610 \
+#     --build-arg VERSION=7.11.0a20251211 \
 #     --build-arg AMDGPU_FAMILY=gfx94X-dcgpu \
 #     -f dockerfiles/rocm_nightly.Dockerfile \
 #     -t rocm-nightly:almalinux8-gfx94X \
 #     dockerfiles/
 #
-#   # Azure Linux 3 + gfx120X
+#   # Azure Linux 3 + gfx120X (nightly)
 #   docker build \
 #     --build-arg BASE_IMAGE=mcr.microsoft.com/azurelinux/base/core:3.0 \
-#     --build-arg ROCM_VERSION=6.5.0rc20250610 \
+#     --build-arg VERSION=7.11.0a20251211 \
 #     --build-arg AMDGPU_FAMILY=gfx120X-all \
 #     -f dockerfiles/rocm_nightly.Dockerfile \
 #     -t rocm-nightly:azurelinux3-gfx120X \
@@ -48,7 +46,7 @@
 #
 # Run example:
 #   docker run --rm -it --device=/dev/kfd --device=/dev/dri \
-#     --group-add video --group-add render \
+#     --security-opt seccomp=unconfined \
 #     rocm-nightly:ubuntu24.04-gfx110X rocminfo
 
 # Base image selection
@@ -60,10 +58,9 @@ LABEL description="Nightly ROCm runtime image built from TheRock project"
 LABEL org.opencontainers.image.source="https://github.com/ROCm/TheRock"
 
 # ROCm configuration arguments
-ARG ROCM_VERSION
+ARG VERSION
 ARG AMDGPU_FAMILY
-ARG INSTALL_PREFIX=/opt
-ARG RELEASE_TYPE=nightly
+ARG RELEASE_TYPE=nightlies
 ARG TARBALL_URL=""
 
 # Copy installation scripts
@@ -75,13 +72,12 @@ COPY install_rocm_tarball.sh /tmp/
 RUN chmod +x /tmp/install_rocm_deps.sh && \
     /tmp/install_rocm_deps.sh
 
-# Install ROCm from nightly tarball
-# Tarball extracts to /opt/rocm-X.Y/, with symlink /opt/rocm -> /opt/rocm-X.Y
+# Install ROCm from tarball
+# Tarball extracts to /opt/rocm-{VERSION}/, with symlink /opt/rocm -> /opt/rocm-{VERSION}
 RUN chmod +x /tmp/install_rocm_tarball.sh && \
     /tmp/install_rocm_tarball.sh \
-        "${ROCM_VERSION}" \
+        "${VERSION}" \
         "${AMDGPU_FAMILY}" \
-        "${INSTALL_PREFIX}" \
         "${RELEASE_TYPE}" \
         "${TARBALL_URL}" && \
     rm -f /tmp/install_rocm_deps.sh /tmp/install_rocm_tarball.sh

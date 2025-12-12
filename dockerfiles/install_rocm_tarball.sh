@@ -1,54 +1,50 @@
 #!/bin/bash
 # install_rocm_tarball.sh
 #
-# Downloads and installs ROCm from a nightly tarball.
-# Architecture supports future extension to other release types and install methods.
+# Downloads and installs ROCm from a tarball.
+# Supports nightly builds with architecture for future extension to prerelease and dev.
 #
-# The tarball is extracted to a versioned directory based on ROCM_VERSION.
+# The tarball is extracted to a versioned directory based on VERSION.
 # For example, with version 7.11.0a20251209:
 #   - Install directory: /opt/rocm-7.11.0a20251209/
 #   - Symlink: /opt/rocm -> /opt/rocm-7.11.0a20251209
 #
 # Usage:
-#   ./install_rocm_tarball.sh <ROCM_VERSION> <AMDGPU_FAMILY> [INSTALL_PREFIX] [RELEASE_TYPE] [TARBALL_URL]
+#   ./install_rocm_tarball.sh <VERSION> <AMDGPU_FAMILY> [RELEASE_TYPE] [TARBALL_URL]
 #
 # Arguments:
-#   ROCM_VERSION     - ROCm version (e.g., 6.5.0rc20250610)
+#   VERSION          - Full version string (e.g., 7.11.0a20251211)
 #   AMDGPU_FAMILY    - AMD GPU family (e.g., gfx110X-all, gfx94X-dcgpu)
-#   INSTALL_PREFIX   - Installation prefix directory (default: /opt)
-#   RELEASE_TYPE     - Release type (default: nightly). Reserved for future extension.
-#   TARBALL_URL      - Custom tarball URL (optional, overrides default S3 URL)
+#   RELEASE_TYPE     - Release type: nightlies (default), prereleases, devreleases
+#   TARBALL_URL      - Custom tarball URL (optional, overrides auto-generated URL)
 #
 # Examples:
-#   ./install_rocm_tarball.sh 6.5.0rc20250610 gfx110X-all
-#   ./install_rocm_tarball.sh 6.5.0rc20250610 gfx94X-dcgpu /opt
-#   ./install_rocm_tarball.sh 6.5.0rc20250610 gfx110X-all /opt nightly https://custom-url/rocm.tar.gz
+#   ./install_rocm_tarball.sh 7.11.0a20251211 gfx110X-all
+#   ./install_rocm_tarball.sh 7.11.0a20251211 gfx94X-dcgpu nightly
+#   ./install_rocm_tarball.sh 7.11.0a20251211 gfx110X-all nightly https://custom-url/rocm.tar.gz
 
 set -e
 
 # Parse arguments
-ROCM_VERSION="${1:?Error: ROCM_VERSION is required}"
+VERSION="${1:?Error: VERSION is required}"
 AMDGPU_FAMILY="${2:?Error: AMDGPU_FAMILY is required}"
-INSTALL_PREFIX="${3:-/opt}"
-RELEASE_TYPE="${4:-nightly}"
-TARBALL_URL="${5:-}"
+RELEASE_TYPE="${3:-nightlies}"
+TARBALL_URL="${4:-}"
 
-# Build S3 bucket URL based on release type
-# Format: https://therock-{RELEASE_TYPE}-tarball.s3.amazonaws.com
-# Currently only nightly is supported; architecture allows future extension
-S3_BUCKET="https://therock-${RELEASE_TYPE}-tarball.s3.amazonaws.com"
+# Build bucket URL: https://rocm.{RELEASE_TYPE}.amd.com/tarball
+# Supported types: nightlies, prereleases, devreleases
+BUCKET_URL="https://rocm.${RELEASE_TYPE}.amd.com/tarball"
 
-# Build default URL if not provided
+# Build URL if not provided
 if [ -z "$TARBALL_URL" ]; then
-    TARBALL_URL="${S3_BUCKET}/therock-dist-linux-${AMDGPU_FAMILY}-${ROCM_VERSION}.tar.gz"
+    TARBALL_URL="${BUCKET_URL}/therock-dist-linux-${AMDGPU_FAMILY}-${VERSION}.tar.gz"
 fi
 
 echo "=============================================="
 echo "ROCm Tarball Installation"
 echo "=============================================="
-echo "ROCm Version:    ${ROCM_VERSION}"
+echo "Version:         ${VERSION}"
 echo "AMDGPU Family:   ${AMDGPU_FAMILY}"
-echo "Install Prefix:  ${INSTALL_PREFIX}"
 echo "Release Type:    ${RELEASE_TYPE}"
 echo "Tarball URL:     ${TARBALL_URL}"
 echo "=============================================="
@@ -68,8 +64,8 @@ if [ ! -f "$TARBALL_FILE" ] || [ ! -s "$TARBALL_FILE" ]; then
     exit 1
 fi
 
-# Build versioned install directory path (e.g., /opt/rocm-7.11.0a20251209)
-ROCM_INSTALL_DIR="${INSTALL_PREFIX}/rocm-${ROCM_VERSION}"
+# Install directory is fixed to /opt/rocm-{VERSION}
+ROCM_INSTALL_DIR="/opt/rocm-${VERSION}"
 
 # Extract tarball to versioned directory
 echo "Extracting tarball to ${ROCM_INSTALL_DIR}..."
@@ -80,8 +76,8 @@ tar -xzf "$TARBALL_FILE" -C "$ROCM_INSTALL_DIR"
 rm -f "$TARBALL_FILE"
 echo "Tarball extracted and cleaned up"
 
-# Create symlink /opt/rocm -> /opt/rocm-X.Y.Z for compatibility
-ROCM_SYMLINK="${INSTALL_PREFIX}/rocm"
+# Create symlink /opt/rocm -> /opt/rocm-{VERSION} for compatibility
+ROCM_SYMLINK="/opt/rocm"
 if [ -L "$ROCM_SYMLINK" ]; then
     rm -f "$ROCM_SYMLINK"
 fi
@@ -107,6 +103,6 @@ fi
 
 echo "=============================================="
 echo "ROCm installed successfully to $ROCM_INSTALL_DIR"
-echo "ROCM_HOME=$ROCM_INSTALL_DIR"
+echo "ROCM_PATH=$ROCM_INSTALL_DIR"
 echo "PATH should include: $ROCM_INSTALL_DIR/bin"
 echo "=============================================="

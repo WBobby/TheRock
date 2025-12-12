@@ -13,7 +13,6 @@
 #   VERSION          - Full version string (e.g., 7.11.0a20251211)
 #   AMDGPU_FAMILY    - AMD GPU family (e.g., gfx110X-all, gfx94X-dcgpu)
 #   RELEASE_TYPE     - Release type (default: nightlies). Options: prereleases, devreleases
-#   TARBALL_URL      - Custom tarball URL (optional, overrides auto-generated URL)
 #
 # Build examples:
 #
@@ -61,7 +60,6 @@ LABEL org.opencontainers.image.source="https://github.com/ROCm/TheRock"
 ARG VERSION
 ARG AMDGPU_FAMILY
 ARG RELEASE_TYPE=nightlies
-ARG TARBALL_URL=""
 
 # Copy installation scripts
 COPY install_rocm_deps.sh /tmp/
@@ -78,8 +76,7 @@ RUN chmod +x /tmp/install_rocm_tarball.sh && \
     /tmp/install_rocm_tarball.sh \
         "${VERSION}" \
         "${AMDGPU_FAMILY}" \
-        "${RELEASE_TYPE}" \
-        "${TARBALL_URL}" && \
+        "${RELEASE_TYPE}" && \
     rm -f /tmp/install_rocm_deps.sh /tmp/install_rocm_tarball.sh
 
 # Configure environment variables

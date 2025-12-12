@@ -2,7 +2,7 @@
 # install_rocm_tarball.sh
 #
 # Downloads and installs ROCm from a tarball.
-# Supports nightly builds with architecture for future extension to prerelease and dev.
+# Supports nightlies, prereleases, and devreleases.
 #
 # The tarball is extracted to a versioned directory based on VERSION.
 # For example, with version 7.11.0a20251209:
@@ -10,18 +10,17 @@
 #   - Symlink: /opt/rocm -> /opt/rocm-7.11.0a20251209
 #
 # Usage:
-#   ./install_rocm_tarball.sh <VERSION> <AMDGPU_FAMILY> [RELEASE_TYPE] [TARBALL_URL]
+#   ./install_rocm_tarball.sh <VERSION> <AMDGPU_FAMILY> [RELEASE_TYPE]
 #
 # Arguments:
 #   VERSION          - Full version string (e.g., 7.11.0a20251211)
 #   AMDGPU_FAMILY    - AMD GPU family (e.g., gfx110X-all, gfx94X-dcgpu)
 #   RELEASE_TYPE     - Release type: nightlies (default), prereleases, devreleases
-#   TARBALL_URL      - Custom tarball URL (optional, overrides auto-generated URL)
 #
 # Examples:
 #   ./install_rocm_tarball.sh 7.11.0a20251211 gfx110X-all
-#   ./install_rocm_tarball.sh 7.11.0a20251211 gfx94X-dcgpu nightly
-#   ./install_rocm_tarball.sh 7.11.0a20251211 gfx110X-all nightly https://custom-url/rocm.tar.gz
+#   ./install_rocm_tarball.sh 7.11.0a20251211 gfx94X-dcgpu nightlies
+#   ./install_rocm_tarball.sh 7.10.0rc2 gfx110X-all prereleases
 
 set -e
 
@@ -29,16 +28,9 @@ set -e
 VERSION="${1:?Error: VERSION is required}"
 AMDGPU_FAMILY="${2:?Error: AMDGPU_FAMILY is required}"
 RELEASE_TYPE="${3:-nightlies}"
-TARBALL_URL="${4:-}"
 
-# Build bucket URL: https://rocm.{RELEASE_TYPE}.amd.com/tarball
-# Supported types: nightlies, prereleases, devreleases
-BUCKET_URL="https://rocm.${RELEASE_TYPE}.amd.com/tarball"
-
-# Build URL if not provided
-if [ -z "$TARBALL_URL" ]; then
-    TARBALL_URL="${BUCKET_URL}/therock-dist-linux-${AMDGPU_FAMILY}-${VERSION}.tar.gz"
-fi
+# Build tarball URL: https://rocm.{RELEASE_TYPE}.amd.com/tarball/therock-dist-linux-{FAMILY}-{VERSION}.tar.gz
+TARBALL_URL="https://rocm.${RELEASE_TYPE}.amd.com/tarball/therock-dist-linux-${AMDGPU_FAMILY}-${VERSION}.tar.gz"
 
 echo "=============================================="
 echo "ROCm Tarball Installation"

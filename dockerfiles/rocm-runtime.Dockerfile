@@ -1,6 +1,6 @@
-# rocm_nightly.Dockerfile
+# rocm-runtime.Dockerfile
 #
-# ROCm Docker Image Builder
+# ROCm Runtime Docker Image Builder
 # Supports multiple Linux distributions through a single Dockerfile.
 #
 # Supported base images:
@@ -21,7 +21,7 @@
 #     --build-arg BASE_IMAGE=ubuntu:24.04 \
 #     --build-arg VERSION=7.11.0a20251211 \
 #     --build-arg AMDGPU_FAMILY=gfx110X-all \
-#     -f dockerfiles/rocm_nightly.Dockerfile \
+#     -f dockerfiles/rocm-runtime.Dockerfile \
 #     -t rocm-nightly:ubuntu24.04-gfx110X \
 #     dockerfiles/
 #
@@ -30,7 +30,7 @@
 #     --build-arg BASE_IMAGE=almalinux:8 \
 #     --build-arg VERSION=7.11.0a20251211 \
 #     --build-arg AMDGPU_FAMILY=gfx94X-dcgpu \
-#     -f dockerfiles/rocm_nightly.Dockerfile \
+#     -f dockerfiles/rocm-runtime.Dockerfile \
 #     -t rocm-nightly:almalinux8-gfx94X \
 #     dockerfiles/
 #
@@ -39,7 +39,7 @@
 #     --build-arg BASE_IMAGE=mcr.microsoft.com/azurelinux/base/core:3.0 \
 #     --build-arg VERSION=7.11.0a20251211 \
 #     --build-arg AMDGPU_FAMILY=gfx120X-all \
-#     -f dockerfiles/rocm_nightly.Dockerfile \
+#     -f dockerfiles/rocm-runtime.Dockerfile \
 #     -t rocm-nightly:azurelinux3-gfx120X \
 #     dockerfiles/
 #
@@ -53,7 +53,7 @@ ARG BASE_IMAGE=ubuntu:24.04
 FROM ${BASE_IMAGE}
 
 LABEL maintainer="TheRock Team"
-LABEL description="Nightly ROCm runtime image built from TheRock project"
+LABEL description="ROCm runtime image built from TheRock project"
 LABEL org.opencontainers.image.source="https://github.com/ROCm/TheRock"
 
 # ROCm configuration arguments

@@ -1,18 +1,40 @@
 # rocm-runtime.Dockerfile
 #
 # ROCm Runtime Docker Image Builder
-# Supports multiple Linux distributions through a single Dockerfile.
+# - Single Dockerfile supporting multiple Linux distributions via `BASE_IMAGE`.
 #
-# Supported base images:
-#   - ubuntu:24.04
-#   - almalinux:8
-#   - mcr.microsoft.com/azurelinux/base/core:3.0
+# Maintained by: AMD ROCm Engineering (contact: dl.MLSE.DevOps@amd.com)
 #
-# Build arguments:
-#   BASE_IMAGE       - Base Docker image (default: ubuntu:24.04)
-#   VERSION          - Full version string (e.g., 7.11.0a20251211)
-#   AMDGPU_FAMILY    - AMD GPU family (e.g., gfx110X-all, gfx94X-dcgpu)
-#   RELEASE_TYPE     - Release type (default: nightlies). Options: prereleases, devreleases
+# Support policy:
+# - Intended for evaluation and development workflows.
+# - Nightlies/prereleases/devreleases are subject to change and may be removed or temporarily unavailable.
+#
+# Trademark:
+# - ROCm is a trademark of Advanced Micro Devices, Inc.
+#
+# Compliance note:
+# - This Dockerfile downloads ROCm tarballs during `docker build` and installs OS packages from the selected base image.
+# - If you redistribute a resulting image, you are responsible for ensuring compliance with applicable licenses/terms
+#   for (1) downloaded ROCm artifacts and (2) the base OS packages you install.
+#
+# Supply-chain / reproducibility note:
+# - For production or CI reproducibility, pin `BASE_IMAGE` by digest (e.g., ubuntu@sha256:...).
+#
+# Runtime note:
+# - This is a user-space ROCm runtime image. It does NOT include kernel drivers.
+# - Host must provide compatible AMDGPU/ROCm kernel components and device access (e.g., --device=/dev/kfd --device=/dev/dri).
+# - Typical run flags: --device=/dev/kfd --device=/dev/dri (and often appropriate group/permission settings).
+#
+# Supported base images (examples)
+# - ubuntu:24.04
+# - almalinux:8
+# - mcr.microsoft.com/azurelinux/base/core:3.0
+#
+# Build arguments
+# - BASE_IMAGE       : Base Docker image (default: ubuntu:24.04)
+# - VERSION          : Full version string (e.g., 7.11.0a20251211)
+# - AMDGPU_FAMILY    : AMD GPU family (e.g., gfx110X-all, gfx94X-dcgpu)
+# - RELEASE_TYPE     : Release type (default: nightlies). Options: prereleases, devreleases
 #
 # Build examples:
 #
@@ -52,13 +74,14 @@
 ARG BASE_IMAGE=ubuntu:24.04
 FROM ${BASE_IMAGE}
 
-LABEL maintainer="dl.MLSE.DevOps@amd.com"
-LABEL description="ROCm runtime image built from TheRock project"
-
 # ROCm configuration arguments
 ARG VERSION
 ARG AMDGPU_FAMILY
 ARG RELEASE_TYPE=nightlies
+
+LABEL org.opencontainers.image.title="ROCm runtime image (TheRock)" \
+    org.opencontainers.image.description="ROCm user-space runtime image built from TheRock project; installs ROCm from prebuilt tarballs during build." \
+    org.opencontainers.image.version="${VERSION}"
 
 # Copy installation scripts
 COPY install_rocm_deps.sh /tmp/

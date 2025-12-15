@@ -100,7 +100,7 @@ case "$DISTRO" in
 
     *)
         echo "Error: Unsupported distribution: $DISTRO"
-        echo "Supported distributions: ubuntu, debian, almalinux, centos, rocky, rhel, fedora, azurelinux, mariner"
+        echo "Supported distributions: ubuntu, almalinux, azurelinux"
         exit 1
         ;;
 esac

@@ -73,28 +73,24 @@ rm -f "$TARBALL_FILE"
 echo "Tarball extracted and cleaned up"
 
 # Create symlink /opt/rocm -> /opt/rocm-{VERSION} for compatibility
-ROCM_SYMLINK="/opt/rocm"
-if [ -L "$ROCM_SYMLINK" ]; then
-    rm -f "$ROCM_SYMLINK"
-fi
-if [ ! -e "$ROCM_SYMLINK" ]; then
-    ln -s "$ROCM_INSTALL_DIR" "$ROCM_SYMLINK"
-    echo "Created symlink: $ROCM_SYMLINK -> $ROCM_INSTALL_DIR"
-fi
+ln -sfn "$ROCM_INSTALL_DIR" /opt/rocm
+echo "Created symlink: /opt/rocm -> $ROCM_INSTALL_DIR"
 
-# Verify installation
+# Verify bin and lib folder exists after extraction
 echo "Verifying installation..."
 if [ -d "$ROCM_INSTALL_DIR/bin" ]; then
     echo "ROCm binaries found in $ROCM_INSTALL_DIR/bin"
     ls -la "$ROCM_INSTALL_DIR/bin" | head -10
 else
-    echo "Warning: ROCm bin directory not found"
+    echo "Error: ROCm bin directory not found"
+    exit 1
 fi
 
 if [ -d "$ROCM_INSTALL_DIR/lib" ]; then
     echo "ROCm libraries found in $ROCM_INSTALL_DIR/lib"
 else
-    echo "Warning: ROCm lib directory not found"
+    echo "Error: ROCm lib directory not found"
+    exit 1
 fi
 
 echo "=============================================="

@@ -22,7 +22,7 @@
 #     --build-arg VERSION=7.11.0a20251211 \
 #     --build-arg AMDGPU_FAMILY=gfx110X-all \
 #     -f dockerfiles/rocm-runtime.Dockerfile \
-#     -t rocm-nightly:ubuntu24.04-gfx110X \
+#     -t rocm-nightly:ubuntu24.04-gfx110X-7.11.0a20251211 \
 #     dockerfiles/
 #
 #   # AlmaLinux 8 + gfx94X (nightly)
@@ -31,7 +31,7 @@
 #     --build-arg VERSION=7.11.0a20251211 \
 #     --build-arg AMDGPU_FAMILY=gfx94X-dcgpu \
 #     -f dockerfiles/rocm-runtime.Dockerfile \
-#     -t rocm-nightly:almalinux8-gfx94X \
+#     -t rocm-nightly:almalinux8-gfx94X-7.11.0a20251211 \
 #     dockerfiles/
 #
 #   # Azure Linux 3 + gfx120X (nightly)
@@ -40,21 +40,20 @@
 #     --build-arg VERSION=7.11.0a20251211 \
 #     --build-arg AMDGPU_FAMILY=gfx120X-all \
 #     -f dockerfiles/rocm-runtime.Dockerfile \
-#     -t rocm-nightly:azurelinux3-gfx120X \
+#     -t rocm-nightly:azurelinux3-gfx120X-7.11.0a20251211 \
 #     dockerfiles/
 #
 # Run example:
 #   docker run --rm -it --device=/dev/kfd --device=/dev/dri \
 #     --security-opt seccomp=unconfined \
-#     rocm-nightly:ubuntu24.04-gfx110X rocminfo
+#     rocm-nightly:ubuntu24.04-gfx110X-7.11.0a20251211 rocminfo
 
 # Base image selection
 ARG BASE_IMAGE=ubuntu:24.04
 FROM ${BASE_IMAGE}
 
-LABEL maintainer="TheRock Team"
+LABEL maintainer="dl.MLSE.DevOps@amd.com"
 LABEL description="ROCm runtime image built from TheRock project"
-LABEL org.opencontainers.image.source="https://github.com/ROCm/TheRock"
 
 # ROCm configuration arguments
 ARG VERSION

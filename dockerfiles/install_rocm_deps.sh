@@ -14,7 +14,6 @@ set -e
 # Detect distribution type from /etc/os-release
 detect_distro() {
     if [ -f /etc/os-release ]; then
-        # shellcheck source=/dev/null
         . /etc/os-release
         echo "$ID"
     else
@@ -42,9 +41,7 @@ case "$DISTRO" in
             python3 \
             python3-dev \
             python3-pip \
-            python3-venv \
-            kmod \
-            pciutils
+            kmod
         # libdw: libdw1t64 for Ubuntu 24.04+, libdw1 for older versions
         apt-get install -y --no-install-recommends libdw1t64 2>/dev/null || \
             apt-get install -y --no-install-recommends libdw1 || true
@@ -64,9 +61,6 @@ case "$DISTRO" in
         dnf install -y --setopt=install_weak_deps=False \
             ca-certificates \
             curl \
-            gcc \
-            gcc-c++ \
-            make \
             libatomic \
             elfutils-libelf \
             elfutils-libs \
@@ -78,8 +72,7 @@ case "$DISTRO" in
             python3 \
             python3-devel \
             python3-pip \
-            kmod \
-            pciutils
+            kmod
         dnf clean all
         ;;
 
@@ -89,9 +82,6 @@ case "$DISTRO" in
             ca-certificates \
             curl \
             tar \
-            gcc \
-            gcc-c++ \
-            make \
             libatomic \
             elfutils-libelf \
             elfutils-libs \
@@ -104,8 +94,7 @@ case "$DISTRO" in
             python3 \
             python3-devel \
             python3-pip \
-            kmod \
-            pciutils
+            kmod
         tdnf clean all
         ;;
 

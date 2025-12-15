@@ -29,8 +29,11 @@ VERSION="${1:?Error: VERSION is required}"
 AMDGPU_FAMILY="${2:?Error: AMDGPU_FAMILY is required}"
 RELEASE_TYPE="${3:-nightlies}"
 
+# URL-encode '+' as '%2B' in VERSION (required for devreleases)
+VERSION_ENCODED="${VERSION//+/%2B}"
+
 # Build tarball URL: https://rocm.{RELEASE_TYPE}.amd.com/tarball/therock-dist-linux-{FAMILY}-{VERSION}.tar.gz
-TARBALL_URL="https://rocm.${RELEASE_TYPE}.amd.com/tarball/therock-dist-linux-${AMDGPU_FAMILY}-${VERSION}.tar.gz"
+TARBALL_URL="https://rocm.${RELEASE_TYPE}.amd.com/tarball/therock-dist-linux-${AMDGPU_FAMILY}-${VERSION_ENCODED}.tar.gz"
 
 echo "=============================================="
 echo "ROCm Tarball Installation"
@@ -45,7 +48,8 @@ echo "=============================================="
 TARBALL_FILE="/tmp/rocm-tarball.tar.gz"
 
 echo "Downloading tarball..."
-wget -q -O "$TARBALL_FILE" "$TARBALL_URL" || {
+# Use curl with -fsSL: fail on errors, silent, show errors, follow redirects
+curl -fsSL -o "$TARBALL_FILE" "$TARBALL_URL" || {
     echo "Error: Failed to download tarball from $TARBALL_URL"
     exit 1
 }

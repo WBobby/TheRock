@@ -31,7 +31,7 @@ case "$DISTRO" in
         apt-get update
         apt-get install -y --no-install-recommends \
             ca-certificates \
-            wget \
+            curl \
             build-essential \
             libelf1 \
             libnuma1 \
@@ -63,7 +63,7 @@ case "$DISTRO" in
         fi
         dnf install -y --setopt=install_weak_deps=False \
             ca-certificates \
-            wget \
+            curl \
             gcc \
             gcc-c++ \
             make \
@@ -87,7 +87,7 @@ case "$DISTRO" in
         echo "Installing dependencies using tdnf..."
         tdnf install -y \
             ca-certificates \
-            wget \
+            curl \
             tar \
             gcc \
             gcc-c++ \

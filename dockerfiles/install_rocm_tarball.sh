@@ -4,11 +4,6 @@
 # Downloads and installs ROCm from a tarball.
 # Supports nightlies, prereleases, and devreleases.
 #
-# The tarball is extracted to a versioned directory based on VERSION.
-# For example, with version 7.11.0a20251209:
-#   - Install directory: /opt/rocm-7.11.0a20251209/
-#   - Symlink: /opt/rocm -> /opt/rocm-7.11.0a20251209
-#
 # Usage:
 #   ./install_rocm_tarball.sh <VERSION> <AMDGPU_FAMILY> [RELEASE_TYPE]
 #
@@ -78,20 +73,13 @@ echo "Created symlink: /opt/rocm -> $ROCM_INSTALL_DIR"
 
 # Verify bin and lib folder exists after extraction
 echo "Verifying installation..."
-if [ -d "$ROCM_INSTALL_DIR/bin" ]; then
-    echo "ROCm binaries found in $ROCM_INSTALL_DIR/bin"
-    ls -la "$ROCM_INSTALL_DIR/bin" | head -10
-else
-    echo "Error: ROCm bin directory not found"
-    exit 1
-fi
-
-if [ -d "$ROCM_INSTALL_DIR/lib" ]; then
-    echo "ROCm libraries found in $ROCM_INSTALL_DIR/lib"
-else
-    echo "Error: ROCm lib directory not found"
-    exit 1
-fi
+for dir in bin clients include lib libexec share; do
+    if [ ! -d "$ROCM_INSTALL_DIR/$dir" ]; then
+        echo "Error: ROCm $dir directory not found"
+        exit 1
+    fi
+    echo "ROCm $dir found in $ROCM_INSTALL_DIR/$dir"
+done
 
 echo "=============================================="
 echo "ROCm installed successfully to $ROCM_INSTALL_DIR"

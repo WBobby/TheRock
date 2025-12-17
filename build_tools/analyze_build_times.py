@@ -154,17 +154,14 @@ def parse_output_path(
     parts = output_path.split("/")
     top_dir = parts[0] if parts else ""
 
-    # Artifact files
+    # Artifact files - return category=None to inherit from other paths
     if output_path.startswith("artifacts/"):
         name = extract_name_from_artifact(parts[1])
         if not name:
             return None, None, None
-        category = (
-            CATEGORY_DEP
-            if ("sysdeps" in name or "fftw3" in name or name.startswith("host-"))
-            else CATEGORY_ROCM
-        )
-        return NAME_MAPPING.get(name, name), category, phase
+        # Don't determine category here; let analyze_tasks inherit it from
+        # the project's other paths (e.g., third-party/ or component dirs)
+        return NAME_MAPPING.get(name, name), None, phase
 
     # Third-party dependencies
     if top_dir == "third-party":
@@ -215,26 +212,51 @@ def parse_output_path(
 def analyze_tasks(
     tasks: List[Task], build_dir: Path
 ) -> Dict[str, Dict[str, Dict[str, int]]]:
-    """Aggregate task durations by category/name/phase."""
+    """Aggregate task durations by category/name/phase.
+
+    Uses two-phase processing:
+    1. First pass: Collect project categories from non-artifact paths
+    2. Second pass: Process all tasks, with artifacts inheriting categories
+    """
     projects: Dict[str, Dict[str, Dict[str, int]]] = defaultdict(
         lambda: defaultdict(lambda: defaultdict(int))
     )
     seen = set()
     build_prefix = str(build_dir.resolve())
 
+    # Single pass: process non-artifact tasks immediately, defer artifact tasks
+    project_categories: Dict[str, str] = {}  # {name: category}
+    deferred_artifacts: List[tuple] = []  # [(name, phase, duration)]
+
     for task in tasks:
+        # Normalize path (strip build prefix)
         output = task.output
         if output.startswith(build_prefix):
-            output = output[len(build_prefix) :].lstrip("/")
+            output = output[len(build_prefix):].lstrip("/")
 
+        # Dedup
         key = (output, task.start, task.end)
         if key in seen:
             continue
         seen.add(key)
 
         name, category, phase = parse_output_path(output)
-        if name:
+        if not name:
+            continue
+
+        if category is None:
+            # Artifact path: defer processing until all categories are collected
+            deferred_artifacts.append((name, phase, task.duration))
+        else:
+            # Non-artifact path: process immediately and record category
+            if name not in project_categories:
+                project_categories[name] = category
             projects[category][name][phase] += task.duration
+
+    # Process deferred artifacts using collected categories
+    for name, phase, duration in deferred_artifacts:
+        category = project_categories.get(name, CATEGORY_ROCM)
+        projects[category][name][phase] += duration
 
     return projects
 

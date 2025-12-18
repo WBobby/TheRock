@@ -10,7 +10,7 @@ Usage:
 Arguments:
     --build-dir     Path to the build directory containing .ninja_log (required)
     --output        Path to output HTML file (optional)
-                    Default: <build-dir>/logs/build_time_analysis.html
+                    Default: <build-dir>/logs/build_observability.html
 
 Examples:
     # Generate report with default output path
@@ -386,7 +386,7 @@ def generate_report(projects: Dict, tasks: List[Task], output_file: Path):
         rocm_data, ["Configure", "Build", "Install", "Package"]
     )
     rocm_html = generate_html_table(
-        "ROCm Components",
+        "ROCm Components Build Time",
         [
             "Sub-Project",
             "Configure (min)",
@@ -409,7 +409,7 @@ def generate_report(projects: Dict, tasks: List[Task], output_file: Path):
         }
     dep_rows = build_table_rows(dep_data, ["Download", "Configure", "Build", "Install"])
     dep_html = generate_html_table(
-        "Dependencies",
+        "ROCm Dependency Build Time",
         [
             "Sub-Project",
             "Download (min)",
@@ -462,7 +462,7 @@ def main():
     tasks = parse_ninja_log(ninja_log)
     projects = analyze_tasks(tasks, args.build_dir)
 
-    output_file = args.output or args.build_dir / "logs" / "build_time_analysis.html"
+    output_file = args.output or args.build_dir / "logs" / "build_observability.html"
     output_file.parent.mkdir(parents=True, exist_ok=True)
     generate_report(projects, tasks, output_file)
 
